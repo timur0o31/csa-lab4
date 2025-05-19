@@ -12,8 +12,13 @@
 Описание синтаксиса языка в стиле БНФ:
 ```ebnf
 <programm> ::= <instruction_line>*
-<instruction_line> ::= <instruction> "\n"
-                     | "\n" 
+<instruction_line> ::= <label>
+                     | <instruction> "\n"
+                     | "\n"
+                     | <const_declaration> "\n"
+<label> ::= <label_name> ":"
+<label_name> ::= [a-zA-Z_][a-zA-Z0-9_]*
+<const_declaration> ::= "const" <label_name> <number> 
 <instruction> ::= <op0>
                 | <op1> " " <literal>
 <op0> ::= "nop"
@@ -50,7 +55,8 @@
                   
 
 ```
-
+### Семантика 
+Код выполняется последовательно одна инструкция за другой.
 ## Организация памяти
 
 ## Система команд
