@@ -10,7 +10,7 @@
 
 ## Язык программирования
 Описание синтаксиса языка в стиле БНФ:
-```bnf
+```ebnf
 <programm> ::= <instruction_line>*
 <instruction_line> ::= <instruction> "\n"
                      | "\n" 
