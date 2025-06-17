@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import re
 from isa.isa import (
     Opcode,
     write_instructions,
@@ -7,7 +8,7 @@ from isa.isa import (
     from_bytes_to_instructions,
     from_bytes_to_data,
 )
-
+LABEL_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 
 class ParsInstr:
     def __init__(self,opcode: Opcode, argument: str | None):
@@ -92,9 +93,13 @@ def symbol_to_opcode(symbol):
         "call": Opcode.CALL,
         "jz": Opcode.JZ,
         "jn": Opcode.JN,
-        ";": Opcode.RET,
+        "swap":Opcode.SWAP,
+        "ret": Opcode.RET,
         "dup": Opcode.DUP,
         "drop": Opcode.DROP,
+        "iret": Opcode.IRET,
+        "eint":Opcode.EINT,
+        "dint": Opcode.DINT,
         "halt": Opcode.HALT
     }.get(symbol)
 
@@ -144,8 +149,11 @@ def first_stage(text: str):
         # обработка меток
         if token.endswith(":"):
             label = token[:-1]
+            if not LABEL_RE.fullmatch(label):
+                sys.exit(f"invalid label name '{label}' "
+                         "(label must match [A-Za-z_][A-Za-z0-9_]* )")
             if label in labels:
-                sys.exit(f" duplicate symbol {label}")
+                sys.exit(f"duplicate symbol {label}")
             labels[label] = len(instrs_tmp)
             i+=1
             continue
@@ -159,6 +167,20 @@ def first_stage(text: str):
             if i >= len_tokens:
                     sys.exit(f"lit expects literal/label")
             arg_tok = tokens[i]
+            i+=1
+        elif opcode == Opcode.IN:
+            if i >= len_tokens:
+                sys.exit(f"input expects literal/label")
+            arg_tok = tokens[i]
+            if not is_number(arg_tok) or int(arg_tok) != 0:
+                sys.exit(f"IN only supports port 0 (default input device). You wrote IN {arg_tok}")
+            i+=1
+        elif opcode == Opcode.OUT:
+            if i >= len_tokens:
+                sys.exit(f"output expects literal/label")
+            arg_tok = tokens[i]
+            if not is_number(arg_tok) or not (1 <= int(arg_tok) <= 7):
+                sys.exit(f"OUT only supports port [1-7] (default input device). You wrote IN {arg_tok}")
             i+=1
         instrs_tmp.append(ParsInstr(opcode, arg_tok))
     return instrs_tmp, labels, data_words
@@ -174,20 +196,39 @@ def resolve_arg(arg_tok: str, labels: dict[str, int]) -> int:
 
 def second_stage(instrs_tmp: list[ParsInstr], labels: dict[str, int]):
     final_instrs: list[dict] = []
+
     for ins in instrs_tmp:
         if ins.opcode == Opcode.LIT:
             arg_val = resolve_arg(ins.argument, labels)
             final_instrs.append({"opcode": Opcode.LIT, "arg": arg_val})
+        elif ins.opcode in Opcode.IN:
+            final_instrs.append({"opcode": Opcode.IN, "arg": to_int(ins.argument)})
+        elif ins.opcode == Opcode.OUT:
+            final_instrs.append({"opcode": Opcode.OUT, "arg": to_int(ins.argument)})
         else:
             final_instrs.append({"opcode": ins.opcode})
-    print(final_instrs)
     return final_instrs
 
 
+def check_interrupt_handler(instrs_tmp: list[ParsInstr],labels: dict[str, int]) -> tuple[bool, int | None]:
+    interrupt_label = "interrupt_handler"
+    interrupts_enabled = any(ins.opcode == Opcode.EINT for ins in instrs_tmp)
+    if not interrupts_enabled:
+        return False, None
+    if interrupt_label not in labels:
+        sys.exit("EINT встречается, но метка interrupt_handler не объявлена")
+    start = labels[interrupt_label]
+    end = min((i for i in labels.values() if i > start), default=len(instrs_tmp))
+    handler_instructions = instrs_tmp[start:end]
+    if not any(ins.opcode == Opcode.IRET for ins in handler_instructions):
+        sys.exit("Обработчик прерывания не завершается IRET")
+    return True, start
+
 def assemble(source: str):
     instrs_tmp, labels,data_words = first_stage(source)
+    intr_enabled, handler_addr = check_interrupt_handler(instrs_tmp,labels)
     instructions = second_stage(instrs_tmp, labels)
-    return instructions, data_words
+    return instructions, data_words, intr_enabled, handler_addr
 
 
 def dump_instructions(path="program.bin"):
@@ -206,11 +247,10 @@ def dump_data(path="data.bin"):
         print(f"{i:04}: {val}")
 
 def main():
-
     if len(sys.argv) != 2:
-        print("usage: python assembler.py program.asm")
+        print("usage: python translator.py program.asm")
         sys.exit(1)
-    if len(sys.argv) == 2 and sys.argv[1] == "--dump":
+    if sys.argv[1] == "--dump":
         dump_instructions()
         print()
         dump_data()
@@ -219,14 +259,26 @@ def main():
     asm_path = Path(sys.argv[1])
     asm_text = asm_path.read_text(encoding="utf-8")
 
-    instructions, data_words = assemble(asm_text)
-
-    write_instructions("program.bin", instructions)
+    instructions, data_words, intr, addr_handler = assemble(asm_text)
+    print(addr_handler)
+    write_instructions("program.bin", instructions, intr, addr_handler)
     write_data("data.bin", data_words)
 
     print(f"✓ assembled {asm_path.name}")
     print(f"  code  : {len(instructions)} instructions  → program.bin")
     print(f"  data  : {len(data_words)} words          → data.bin")
+    print(instructions)
+
+    print("\n--- Проверка обратного преобразования бинарника ---")
+    recovered_instructions, recovered_handler = from_bytes_to_instructions("program.bin")
+    print("Recovered handler address:",
+          f"{recovered_handler}" if recovered_handler is not None else "None")
+    print(f"Recovered instructions: len =  {len(recovered_instructions)}")
+    for i, instr in enumerate(recovered_instructions):
+        if "arg" in instr:
+            print(f"{instr['opcode']} {instr['arg']}")
+        else:
+            print(f"{instr['opcode']}")
 
 if __name__ == "__main__":
     main()
