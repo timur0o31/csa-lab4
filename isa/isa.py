@@ -24,7 +24,7 @@ class Opcode(str, Enum):
     SWAP = "swap"
     DUP = "dup"
     DROP = "drop"
-    RINT = "rint"
+    IRET = "iret"
     EINT = "eint"
     DINT = "dint"
     HALT = "halt"
@@ -55,7 +55,7 @@ opcode_to_binary = {
     Opcode.SWAP: 0x16,
     Opcode.DUP: 0x17,
     Opcode.DROP: 0x18,
-    Opcode.RINT: 0x19,
+    Opcode.IRET: 0x19,
     Opcode.EINT: 0x1A,
     Opcode.DINT: 0x1B,
     Opcode.HALT: 0x1C,
@@ -85,13 +85,17 @@ binary_to_opcode = {
     0x16: Opcode.SWAP,
     0x17: Opcode.DUP,
     0x18: Opcode.DROP,
-    0x19: Opcode.RINT,
+    0x19: Opcode.IRET,
     0x1A: Opcode.EINT,
     0x1B: Opcode.DINT,
     0x1C: Opcode.HALT
 }
-def instructions_to_bytes(instructions: list[dict]) -> bytes: #происходит правильный перевод для операндов в обратный код
+def instructions_to_bytes(instructions: list[dict], intr, handler_addr) -> bytes: #происходит правильный перевод для операндов в обратный код
     binary_bytes = bytearray()
+    if intr and handler_addr is not None:
+        binary_bytes.extend([(handler_addr >> 24) & 0xFF, (handler_addr >> 16) & 0xFF,(handler_addr >> 8) & 0xFF, handler_addr & 0xFF])
+    else:
+        binary_bytes.extend([0xFF, 0xFF,0xFF,0xFF])
     for instr in instructions:
         if instr.get("opcode") == Opcode.LIT:
             arg  = instr.get("arg",0)
@@ -118,9 +122,9 @@ def data_to_bytes(data: list[int]) -> bytes: #отрицательные чис�
         ])
     return bytes(binary_bytes)
 
-def write_instructions(filename,instructions):
+def write_instructions(filename,instructions, intr, handler_addr):
     with open(filename,"wb") as file:
-        file.write(instructions_to_bytes(instructions))
+        file.write(instructions_to_bytes(instructions,intr, handler_addr))
 
 def write_data(filename,data):
     with open(filename,"wb") as file:
@@ -130,7 +134,12 @@ def from_bytes_to_instructions(filename): # корректно, строки а�
     with open(filename, "rb") as file:
         binary_bytes = file.read()
         instructions = []
-        for i in range(0, len(binary_bytes), 4):
+        handler_addr = ((binary_bytes[0] << 24) |
+                        (binary_bytes[1] << 16) |
+                        (binary_bytes[2] << 8) |
+                         binary_bytes[3]
+        )
+        for i in range(4, len(binary_bytes), 4):
             word = (
                     (binary_bytes[i] << 24) |
                     (binary_bytes[i + 1] << 16) |
@@ -146,7 +155,7 @@ def from_bytes_to_instructions(filename): # корректно, строки а�
                 instructions.append({"opcode": Opcode.LIT, "arg": arg})
             else:
                 instructions.append({"opcode": opcode})
-    return instructions
+    return instructions, handler_addr
 
 def bytes_to_int(byte_arr: bytes) -> int: #корректно
     word = (
