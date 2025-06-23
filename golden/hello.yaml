@@ -24,7 +24,7 @@ out_stdout: |
   source LoC: 16 code instr: 25
   ============================================================
   output_buffer:hello world!
-  ticks: 225
+  ticks: 223
 
 out_instructions_hex: |
   0 - 04000000 - lit 0
