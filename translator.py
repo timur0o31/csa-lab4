@@ -15,7 +15,6 @@ class ParsInstr:
         self.opcode = opcode
         self.argument = argument
 
-
 def tokenize(text):
     tokens = []
     strings = []
@@ -39,7 +38,7 @@ def tokenize(text):
             buf_string += ch
             i += 1
             continue
-        if ch == ";":
+        if ch == "\\":
             while i<n and text[i] != "\n":
                 i+=1
             continue
@@ -54,6 +53,169 @@ def tokenize(text):
     if buf_string:
         tokens.append(buf_string)
     return tokens, strings
+
+def forth_to_assemble(text: str) -> str:
+    tokens, strings = tokenize(text)
+    proc_out = []
+    global_out = []
+    cur = global_out
+    data_labels  = set()
+    func_end = None
+    func_labels = set()
+    need_tmp_over = False
+    begin_stack = []
+    if_stack = []
+    uid_if_else = 0
+    uid_begin_again = 0
+    i = 0
+    while i < len(tokens):
+        if tokens[i] == "var":
+            data_labels.add(tokens[i + 1])
+            i += 2
+        elif tokens[i] == "str":
+            data_labels.add(tokens[i+1])
+            i += 3
+        elif tokens[i] == "array":
+            data_labels.add(tokens[i+1])
+            i += 3
+        elif tokens[i] == "*2":
+            need_tmp_over = True
+            i+=1
+        else:
+            i += 1
+    if need_tmp_over:
+        global_out.extend(["var", "_tmp_over", "0"])
+        data_labels.add("_tmp_over")
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok.lstrip("-").isdigit():
+            cur.append(f"lit {tok}")
+            i += 1
+            continue
+        if tok == "var":
+            name = tokens[i + 1]
+            global_out.extend(["var", name,"0"])
+            i+=2
+            continue
+        if tok == "str":
+            name = tokens[i + 1]
+            global_out.extend(["var",name, f'"{strings.pop(0)}"'])
+            i += 3
+            continue
+        if tok == "array":
+            name = tokens[i + 1]
+            capacity = int(tokens[i + 2])
+            global_out.extend(["var",name]+["0"]*capacity)
+            i += 3
+            continue
+        if tok == "out":
+            cur.extend(["out",tokens[i+1]])
+            i+=2
+            continue
+        if tok == "in":
+            cur.extend(["in", tokens[i + 1]])
+            i += 2
+            continue
+        if tok == ":":
+            func_end = f"{tokens[i + 1]}_end"
+            cur = proc_out
+            cur.append(f"{tokens[i + 1]}:")
+            func_labels.add(f"{tokens[i + 1]}")
+            i += 2
+            continue
+        if tok == ";":
+            if func_end =="interrupt_handler_end":
+                cur.append("iret")
+            else:
+                cur.append(f"{func_end}:")
+                cur.append("ret")
+            func_end = None
+            cur = global_out
+            i += 1
+            continue
+        if tok == "!=" or tok == ">":
+            uid_if_else += 1
+            else_label = f"else_{uid_if_else}"
+            end_label = f"end_{uid_if_else}"
+            if tok =="!=":
+                cur.append(f"-")
+                cur.append(f"lit else_{uid_if_else}")
+                cur.append("swap")
+                cur.append("jz")
+            else:
+                cur.append("swap")
+                cur.append("-")
+                cur.append(f"lit else_{uid_if_else}")
+                cur.append("swap")
+                cur.append("jn")
+            if_stack.append((else_label, end_label,False))
+            i+=2
+            continue
+        if tok == "else":
+            else_label, end_label, _sk = if_stack.pop()
+            cur.extend([f"lit {end_label}","jump"])
+            cur.append(f"{else_label}:")
+            if_stack.append((else_label, end_label, True))
+            i+=1
+            continue
+        if tok =="then":
+            else_label, end_label, has_else = if_stack.pop()
+            if not has_else:
+                cur.append(f"{else_label}:")
+                cur.append("nop")
+            cur.append(f"{end_label}:")
+            cur.append(f"nop")
+            i += 1
+            continue
+        if tok == "begin":
+            uid_begin_again += 1
+            l_begin = f"loop_{uid_begin_again}_start"
+            l_end = f"loop_{uid_begin_again}_end"
+            begin_stack.append((l_begin,l_end))
+            cur.append(f"{l_begin}:")
+            i += 1
+            continue
+        if tok == "exit":
+            l_begin, l_end = begin_stack[-1]
+            cur.extend([f"lit {l_end}","inc","inc","jump"])
+            i+=1
+            continue
+
+        if tok == "again":
+            l_begin,l_end = begin_stack.pop()
+            cur.append(f"{l_end}:")
+            cur += [f"lit {l_begin}", "jump"]
+            i += 1
+            continue
+        if tok in data_labels:
+            cur.append(f"lit {tok}")
+            i += 1
+            continue
+        if tok in func_labels:
+            cur.append(f"lit {tok}")
+            cur.append(f"call")
+            i+=1
+            continue
+        if tok == "*2":
+            cur.extend(["dup", "lit _tmp_over", "!",
+                "swap", "dup", "lit _tmp_over", "@",
+                "mulh", "lit _tmp_over", "!",
+                "*", "lit _tmp_over", "@", "swap",
+            ])
+            i += 1
+            continue
+        cur.append(tok)
+        i += 1
+    full_out = global_out+proc_out
+    for i in full_out:
+        if not i.endswith(":"):
+            print(f"\t{i}")
+        else:
+            print(i)
+
+    return "\n".join(full_out) + "\n"
+
 
 
 def is_number(tok: str) -> bool:
@@ -73,18 +235,19 @@ def to_int(tok: str) -> int:
 
 def symbol_to_opcode(symbol):
     return {
+        "nop":Opcode.NOP,
         "lit": Opcode.LIT,
         "!": Opcode.STORE,
         "@": Opcode.LOAD,
         "in": Opcode.IN,
         "out": Opcode.OUT,
         "+": Opcode.ADD,
-        "+2": Opcode.ADD2,
         "-": Opcode.SUB,
         "*": Opcode.MUL,
         "/": Opcode.DIV,
         "inc": Opcode.INC,
         "dec": Opcode.DEC,
+        "mulh": Opcode.MULH,
         "and": Opcode.AND,
         "or": Opcode.OR,
         "xor": Opcode.XOR,
@@ -115,7 +278,6 @@ def first_stage(text: str):
     while i < len_tokens:
         token = tokens[i]
 
-        # обработка переменных
         if token == "var":
             if i+2 >= len_tokens:
                 sys.exit(f"syntax: var <name> <numbers>|<string>")
@@ -129,7 +291,9 @@ def first_stage(text: str):
                 if v == "*":
                     if string_index >= len(strings):
                         sys.exit(f" string index out of range")
-                    values.extend(ord(c) for c in strings[string_index])
+                    raw = strings[string_index]
+                    processed = bytes(raw, "utf-8").decode("unicode_escape")
+                    values.extend(ord(c) for c in processed)
                     values.append(0)
                     string_index += 1
                     j += 1
@@ -146,7 +310,6 @@ def first_stage(text: str):
             i = j
             continue
 
-        # обработка меток
         if token.endswith(":"):
             label = token[:-1]
             if not LABEL_RE.fullmatch(label):
@@ -157,12 +320,14 @@ def first_stage(text: str):
             labels[label] = len(instrs_tmp)
             i+=1
             continue
-        #Обработка инструкций
+
         opcode = symbol_to_opcode(token)
+
         if opcode is None:
             sys.exit(f" unknown opcode '{token}'")
         i += 1
         arg_tok = None
+
         if opcode == Opcode.LIT:
             if i >= len_tokens:
                     sys.exit(f"lit expects literal/label")
@@ -182,6 +347,7 @@ def first_stage(text: str):
             if not is_number(arg_tok) or not (1 <= int(arg_tok) <= 7):
                 sys.exit(f"OUT only supports port [1-7] (default input device). You wrote IN {arg_tok}")
             i+=1
+
         instrs_tmp.append(ParsInstr(opcode, arg_tok))
     return instrs_tmp, labels, data_words
 
@@ -230,41 +396,20 @@ def assemble(source: str):
     instructions = second_stage(instrs_tmp, labels)
     return instructions, data_words, intr_enabled, handler_addr
 
-
-def dump_instructions(path="program.bin"):
-    instrs = from_bytes_to_instructions(path)
-    for i, ins in enumerate(instrs):
-        if "arg" in ins:
-            print(f"{i:04}: {ins['opcode']} {ins['arg']}")
-        else:
-            print(f"{i:04}: {ins['opcode']}")
-
-
-def dump_data(path="data.bin"):
-    data = from_bytes_to_data(path)
-    print(f"{len(data)} данные")
-    for i, val in enumerate(data):
-        print(f"{i:04}: {val}")
-
 def main():
     if len(sys.argv) != 2:
         print("usage: python translator.py program.asm")
         sys.exit(1)
-    if sys.argv[1] == "--dump":
-        dump_instructions()
-        print()
-        dump_data()
-        sys.exit(0)
 
-    asm_path = Path(sys.argv[1])
-    asm_text = asm_path.read_text(encoding="utf-8")
-
+    forth_path = Path(sys.argv[1])
+    forth_text = forth_path.read_text(encoding="utf-8")
+    asm_text = forth_to_assemble(forth_text)
     instructions, data_words, intr, addr_handler = assemble(asm_text)
-    print(addr_handler)
+    print(data_words)
     write_instructions("program.bin", instructions, intr, addr_handler)
     write_data("data.bin", data_words)
 
-    print(f"✓ assembled {asm_path.name}")
+    print(f"✓ forth {forth_path.name}")
     print(f"  code  : {len(instructions)} instructions  → program.bin")
     print(f"  data  : {len(data_words)} words          → data.bin")
     print(instructions)

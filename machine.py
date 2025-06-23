@@ -1,57 +1,31 @@
 import sys
-
-from isa.isa import Opcode, from_bytes_to_data, from_bytes_to_instructions,data_to_bytes
+from isa.isa import Opcode, from_bytes_to_data, from_bytes_to_instructions,data_to_bytes, instr_to_bytes
 from signals import Signal, ProcessorState
+import logging
 
 class DataPath:
-    stack: list[int] = None
-    stack_pointer: int = None
-    stack_size: int = None
-    data_address: int = None
-    tos: int = None
-    result_alu: int = None
-    CU_arg: int = None
-    data_memory: list[int] = None
-    INT_MAX: int = None
-    io_ports: dict[int, list[str]]= None
-    def __init__(self,data,input_buffer, stack_capacity):
-        self.data_memory = data #???
+    def __init__(self,data, stack_capacity,IO_Controller):
+        self.data_memory = data
         self.stack_size = stack_capacity
         self.stack = [0] * stack_capacity
         self.tos = 0
         self.data_address = 0
         self.CU_arg = 0
         self.result_alu = 0
-        self.flags = {"Z":0, "N":0}
+        self.flags = {"Z":0, "N":0, "C":0}
         self.stack_pointer = -1
         self.INT_MAX = 2**32 - 1
-        output = list()
-        self.io_ports = {0: list(), 1: output, 2: list()}
-        self.input_buffer = input_buffer
-    def stack_push(self,value):
-        assert self.stack_pointer < self.stack_size, "data stack overflow"
-        self.stack_pointer += 1
-        self.stack[self.stack_pointer] = value
-
-    def stack_pop(self):
-        assert self.stack_pointer >= 0, "data stack underflow"
-        value = self.stack[self.stack_pointer]
-        self.stack[self.stack_pointer] = 0
-        self.stack_pointer -= 1
-        return value
-
-    def stack_top(self):
-        return self.stack[self.stack_pointer]
+        self.IO_Controller = IO_Controller
 
     def signal_memory_store(self):
         addr = self.data_address
         assert -1 < addr < len(self.data_memory), ""
         self.data_memory[addr] = self.tos
 
-    def latch_stack(self):
+    def signal_latch_stack(self):
         self.stack[self.stack_pointer] = self.tos
 
-    def latch_data_address(self):
+    def signal_latch_data_address(self):
         self.data_address = self.tos
 
     def latch_sp(self, sel: Signal):
@@ -60,12 +34,12 @@ class DataPath:
             self.stack_pointer += 1
         elif Signal.SEL_SP_PREV == sel:
             assert self.stack_pointer >= 0, "negative stack pointer was received"
-            self.stack[self.stack_pointer-1] = 0
+            self.stack[self.stack_pointer] = 0
             self.stack_pointer -= 1
 
     def latch_tos(self, sel : Signal):
-        if sel == Signal.SEL_TOS_SREG:
-            self.tos = self.stack_pop()
+        if sel == Signal.SEL_TOS_STACK:
+            self.tos = self.stack[self.stack_pointer]
         elif sel == Signal.SEL_TOS_CU_ARG:
             self.tos = self.CU_arg
         elif sel == Signal.SEL_TOS_ALU:
@@ -73,18 +47,17 @@ class DataPath:
         elif sel == Signal.SEL_TOS_MEM:
             self.tos = self.data_memory[self.data_address]
         elif sel == Signal.SEL_TOS_IN:
-            self.tos = ord(self.io_ports[self.tos].pop(0))
-        elif sel == Signal.SEL_TOS_SYNC:
-            self.tos = self.stack_top()
+            self.tos = self.IO_Controller.input(self.CU_arg)
 
-    #не забыть проверять область определния результата как 32-битное число
     def signal_alu_binary(self,opcode):
-        assert self.stack_pointer >= 2, f"Not enough elements on stack {self.stack_pointer}, {self.stack}"
+        assert self.stack_pointer >= 1, f"Not enough elements on stack {self.stack_pointer}, {self.stack}"
         a = self.tos
-        b = self.stack[self.stack_pointer - 1]
+        b = self.stack[self.stack_pointer]
         result = 0
         if opcode == Opcode.ADD:
             result = a + b
+            self.flags["C"] = int(result > 0xFFFFFFFF)
+            result &= 0xFFFFFFFF
         elif opcode == Opcode.SUB:
             result = a - b
         elif opcode == Opcode.AND:
@@ -93,6 +66,10 @@ class DataPath:
             result = a | b
         elif opcode == Opcode.MUL:
             result = a * b
+            result &= 0xFFFFFFFF
+        elif opcode == Opcode.MULH:
+            wide = a * b
+            result = (wide >> 32) & 0xFFFFFFFF
         elif opcode == Opcode.DIV:
             result = a//b
         elif opcode == Opcode.XOR:
@@ -109,255 +86,246 @@ class DataPath:
             result = ~self.tos & 0xFFFFFFFF
         self.result_alu = result
 
-    def zero_flag(self):
+    def signal_latch_zero_flag(self):
         self.flags["Z"] = int(self.tos == 0)
-    def negative_flag(self):
+    def signal_latch_negative_flag(self):
         self.flags["N"] = int(self.tos < 0)
-
+    def signal_write_port(self):
+        self.IO_Controller.output(self.CU_arg, self.tos)
     def stack_swap(self):
-        assert self.stack_pointer >= 1, "data stack underflow"
-        self.stack[self.stack_pointer], self.stack[self.stack_pointer-1] = self.stack[self.stack_pointer-1], self.stack[self.stack_pointer]
+        assert self.stack_pointer >= 0, "data stack underflow"
+        self.stack[self.stack_pointer], self.tos = self.tos, self.stack[self.stack_pointer]
+
+
+class IOController:
+    def __init__(self,io_ports):
+        self.io_ports = io_ports  #port -> list
+    def push_input_buf(self,port,value):
+        self.io_ports[port].append(value)
+    def input(self, port):
+        return self.io_ports[port].pop(0)
+    def output(self,port,value):
+        self.io_ports[port].append(chr(value))
+
+
 
 class Control_Unit:
-    pc = None
-    program = None
-    data_path: DataPath = None
-    call_stack = None
-    step = None
-    _tick = None
-    state = None
     def __init__(self,program_memory,data_path: DataPath, call_stack_capacity, input_timetable, interrupt_handler_address):
         self.IF = False
         self.INTR = False
         self.interrupt_handler_address = interrupt_handler_address
         self.input_timetable = input_timetable
-        self.in_interrupt = False
+        self.scp = -1
         self.program = program_memory
         self.pc = 0
-        self.call_stack = []
+        self.call_stack = [0] * call_stack_capacity
         self.data_path = data_path
         self._tick = 0
         self.step = 0
-        self.call_stack_capacity = call_stack_capacity
         self.state = ProcessorState.NORMAL
-        self.MAX_NESTED = 3
-        self.nested_lvl = 0
+        self.return_addr = 0
 
     def tick(self):
         self._tick += 1
-    def current_tick(self):
-        return self._tick
-    def signal_latch_pc(self, next_pc=1):
-        self.pc = next_pc
-        assert self.pc < len(self.program), "out of instruction memory:"
+    def latch_pc(self, sel: Signal):
+        if sel == Signal.SEL_PC_NEXT:
+            self.pc += 1
+        elif sel == Signal.SEL_PC_TOS:
+            self.pc = self.data_path.tos
+        elif sel == Signal.SEL_PC_INT:
+            self.pc = self.interrupt_handler_address
+        elif sel == Signal.SEL_PC_RET:
+            self.pc = self.call_stack[self.scp]
+    def latch_scp(self, sel: Signal):
+        if sel == Signal.SEL_SCP_NEXT:
+            assert self.scp < len(self.call_stack), "call stack capacity exceeded"
+            self.scp += 1
+            self.call_stack[self.scp] = self.pc + 1
+        elif sel == Signal.SEL_SCP_PREV:
+            assert self.scp >= 0, "negative call stack pointer was received"
+            self.call_stack[self.scp] = 0
+            self.scp -= 1
 
-    def signal_latch_intr(self):
-        next_pc = self.interrupt_handler_address
-        self.signal_latch_pc(next_pc)
-
-    def signal_rem_int_rq(self): #Сброс сигнала запроса прерываний
+    def signal_store_pc(self):
+        self.call_stack[self.scp] = self.pc
+    def signal_enable_interrupts(self):
+        self.IF = True
+    def signal_disable_interrupts(self):
+        self.IF = False
+    def signal_set_INTR(self):
+        self.INTR = True
+    def signal_reset_INTR(self):
         self.INTR = False
-    def signal_latch_pc_intr(self):
-        self.call_stack.append(self.pc)
-        self.pc = self.interrupt_handler_address
-    def signal_store_registers(self):
-        self.call_stack.append(self.data_path.tos)
-        self.call_stack.append(self.data_path.stack_pointer)
-        self.call_stack.append(self.data_path.data_address)
-    def signal_restore_registers(self):
-        self.data_path.data_address = self.call_stack.pop()
-        self.data_path.stack_pointer = self.call_stack.pop()
-        self.data_path.tos = self.call_stack.pop()
-
-
-    def signal_set_IF(self,flag): # Разрешает или же запрещает прерывания
-        self.IF = flag
-    def signal_set_INTR(self, flag):
-        self.INTR = flag
     def check_interrupt_request(self):
-        if self._tick not in self.input_timetable:
+        if self._tick not in self.input_timetable.keys():
             return
         if not self.IF:
             return
-        if self.nested_lvl >= self.MAX_NESTED: #???
-            return
-        value = self.data_path.input_buffer.pop(0)
-        self.data_path.io_ports[0].append(value[1])
-        self.signal_set_INTR(True)
+        port, value = self.input_timetable[self._tick]
+        self.data_path.IO_Controller.push_input_buf(port, value)
+        self.signal_set_INTR()
     def decode_and_execute_instruction(self):
         self.check_interrupt_request()
-        if self.INTR:
-            if self.step == 0:
-                self.signal_store_registers()
+        if self.INTR and self.step == 0:
+                self.return_addr = self.pc
+                self.latch_pc(Signal.SEL_PC_INT)
+                self.state = ProcessorState.INTERRUPTION
                 self.tick()
-                return
-            if self.step == 1:
-                self.signal_latch_pc_intr()
-                self.state = ProcessorState.INT_BODY
                 self.step = 0
-                self.tick()
-                self.nested_lvl += 1
-                self.signal_set_INTR(False)
+                self.signal_reset_INTR()
                 return
 
         instr = self.program[self.pc]
         opcode = instr["opcode"]
-        print(self.data_path.stack[0:10])
-        print(opcode," такты:", self._tick," pc:",self.pc)
-        if opcode == Opcode.LIT:
-            print(instr["arg"])
         if opcode == Opcode.HALT:
             raise StopIteration()
         if opcode is Opcode.IRET:
-            self.pc = self.call_stack.pop()
-            self.signal_restore_registers()
+            self.pc = self.return_addr
             self.state = ProcessorState.NORMAL
             self.step = 0
             self.tick()
             return
 
         if opcode is Opcode.EINT:
-            self.signal_set_IF(True)
-            self.signal_latch_pc()
+            self.signal_enable_interrupts()
+            self.latch_pc(Signal.SEL_PC_NEXT)
             self.step = 0
             self.tick()
             return
 
         if opcode is Opcode.DINT:
-            self.signal_set_IF(False)
-            self.signal_latch_pc()
+            self.signal_disable_interrupts()
+            self.latch_pc(Signal.SEL_PC_NEXT)
             self.step = 0
             self.tick()
             return
 
         if opcode == Opcode.JUMP:
-            self.data_path.latch_tos(Signal.SEL_TOS_SREG)
-            self.signal_latch_pc(self.data_path.tos)
-            self.data_path.latch_tos(Signal.SEL_TOS_ALU)
+            self.latch_pc(Signal.SEL_PC_TOS)
+            self.data_path.latch_tos(Signal.SEL_TOS_STACK)
+            self.data_path.latch_sp(Signal.SEL_SP_PREV)
             self.step = 0
             self.tick()
             return
 
         if opcode == Opcode.JZ:
             if self.step == 0:
-                self.data_path.latch_tos(Signal.SEL_TOS_SREG)
-                self.data_path.zero_flag()
+                self.data_path.signal_latch_zero_flag()
+                self.data_path.latch_tos(Signal.SEL_TOS_STACK)
+                self.data_path.latch_sp(Signal.SEL_SP_PREV)
                 self.step = 1
                 self.tick()
                 return
             if self.step == 1:
-                self.data_path.latch_tos(Signal.SEL_TOS_SREG) #берется значение куда надо перейти
                 if self.data_path.flags["Z"]:
-                    self.signal_latch_pc(self.data_path.tos)
+                    self.latch_pc(Signal.SEL_PC_TOS)
                 else:
-                    self.signal_latch_pc(self.pc+1)
-                self.data_path.latch_tos(Signal.SEL_TOS_SYNC)
+                    self.latch_pc(Signal.SEL_PC_NEXT)
+                self.data_path.latch_tos(Signal.SEL_TOS_STACK)
+                self.data_path.latch_sp(Signal.SEL_SP_PREV)
                 self.step = 0
                 self.tick()
                 return
 
         if opcode == Opcode.JN:
             if self.step == 0:
-                self.data_path.latch_tos(Signal.SEL_TOS_SREG)
-                self.data_path.negative_flag()
+                self.data_path.signal_latch_negative_flag()
+                self.data_path.latch_tos(Signal.SEL_TOS_STACK)
+                self.data_path.latch_sp(Signal.SEL_SP_PREV)
                 self.step = 1
                 self.tick()
                 return
             if self.step == 1:
-                self.data_path.latch_tos(Signal.SEL_TOS_SREG) #берется значение куда надо перейти
                 if self.data_path.flags["N"]:
-                    self.signal_latch_pc(self.data_path.tos)
+                    self.latch_pc(Signal.SEL_PC_TOS)
                 else:
-                    self.signal_latch_pc(self.pc+1)
-                self.data_path.latch_tos(Signal.SEL_TOS_SYNC)
+                    self.latch_pc(Signal.SEL_PC_NEXT)
+                self.data_path.latch_tos(Signal.SEL_TOS_STACK)
+                self.data_path.latch_sp(Signal.SEL_SP_PREV)
                 self.step = 0
                 self.tick()
                 return
 
         if opcode == Opcode.LIT:
             self.data_path.CU_arg = instr["arg"]
+            self.data_path.latch_sp(Signal.SEL_SP_NEXT)
+            self.data_path.signal_latch_stack()
             self.data_path.latch_tos(Signal.SEL_TOS_CU_ARG)
-            self.data_path.stack_push(self.data_path.tos)
-            self.signal_latch_pc(self.pc+1)
+            self.latch_pc(Signal.SEL_PC_NEXT)
             self.step = 0
             self.tick()
             return
         if opcode == Opcode.CALL:
-                self.data_path.latch_tos(Signal.SEL_TOS_SREG)
-                assert len(self.call_stack) < self.call_stack_capacity
-                self.call_stack.append(self.pc + 1)
-                self.signal_latch_pc(self.data_path.tos)
-                self.data_path.latch_tos(Signal.SEL_TOS_SYNC)
-                self.step = 0
-                self.tick()
-                return
+            self.latch_scp(Signal.SEL_SCP_NEXT)
+            self.latch_pc(Signal.SEL_PC_TOS)
+            self.data_path.latch_tos(Signal.SEL_TOS_STACK)
+            self.data_path.latch_sp(Signal.SEL_SP_PREV)
+            self.step = 0
+            self.tick()
+            return
         if opcode == Opcode.RET:
-            assert len(self.call_stack) > 0
-            return_addr = self.call_stack[self.nested_lvl]
-            self.signal_latch_pc(return_addr)
+            self.latch_pc(Signal.SEL_PC_RET)
+            self.latch_scp(Signal.SEL_SCP_PREV)
             self.step = 0
             self.tick()
             return
 
         if opcode == Opcode.LOAD:
             if self.step == 0:
-                self.data_path.latch_tos(Signal.SEL_TOS_SREG) #адрес
-                self.data_path.latch_data_address()
+                self.data_path.signal_latch_data_address()
                 self.step = 1
                 self.tick()
                 return
             if self.step == 1:
                 self.data_path.latch_tos(Signal.SEL_TOS_MEM)
-                self.data_path.stack_push(self.data_path.tos)
-                self.signal_latch_pc(self.pc+1)
+                self.latch_pc(Signal.SEL_PC_NEXT)
                 self.step = 0
                 self.tick()
                 return
 
         if opcode == Opcode.STORE:
             if self.step == 0:
-                self.data_path.latch_tos(Signal.SEL_TOS_SREG) #адрес
-                self.data_path.latch_data_address() #меняю регистр AR
+                self.data_path.signal_latch_data_address()
+                self.data_path.latch_tos(Signal.SEL_TOS_STACK)
+                self.data_path.latch_sp(Signal.SEL_SP_PREV)
                 self.step = 1
                 self.tick()
                 return
             if self.step == 1:
-                self.data_path.latch_tos(Signal.SEL_TOS_SREG) # значение данных
                 self.data_path.signal_memory_store()
-                self.data_path.latch_tos(Signal.SEL_TOS_SYNC)
-                self.signal_latch_pc(self.pc+1)
+                self.data_path.latch_tos(Signal.SEL_TOS_STACK)
+                self.data_path.latch_sp(Signal.SEL_SP_PREV)
+                self.latch_pc(Signal.SEL_PC_NEXT)
                 self.step = 0
                 self.tick()
                 return
 
         if opcode == Opcode.IN:
-            port = instr.arg
-            assert port in self.data_path.io_ports, f"Invalid port: {port}"
-            assert self.data_path.io_ports[port], f"Input buffer for port {port} is empty"
-            self.data_path.latch_tos(Signal.SEL_TOS_IN)
-            self.data_path.latch_stack()
+            self.data_path.CU_arg = instr["arg"]
             self.data_path.latch_sp(Signal.SEL_SP_NEXT)
-            self.signal_latch_pc(self.pc+1)
+            self.data_path.signal_latch_stack()
+            self.data_path.latch_tos(Signal.SEL_TOS_IN)
+            self.latch_pc(Signal.SEL_PC_NEXT)
+            self.step = 0
             self.tick()
+            print(self.data_path.stack[0:5], self.data_path.tos)
             return
 
         if opcode == Opcode.OUT:
-                port = instr.arg
-                self.data_path.latch_tos(Signal.SEL_TOS_SREG)
-                value = self.data_path.tos
-                assert 1 <= port <= 7, f"OUT supports ports 1–7. Got port={port}"
-                self.data_path.io_ports[port].append(chr(value%256))
-                self.signal_latch_pc(self.pc+1)
-                self.step = 0
-                self.tick()
-                return
-
-        if opcode in {Opcode.ADD, Opcode.SUB, Opcode.MUL, Opcode.DIV, Opcode.OR, Opcode.AND, Opcode.XOR}:
+            self.data_path.CU_arg = instr["arg"]
+            assert 1 <= self.data_path.CU_arg <= 7, f"OUT supports ports 1–7. Got port={self.data_path.CU_arg}"
+            self.data_path.signal_write_port()
+            self.data_path.latch_tos(Signal.SEL_TOS_STACK)
+            self.data_path.latch_sp(Signal.SEL_SP_PREV)
+            self.latch_pc(Signal.SEL_PC_NEXT)
+            self.step = 0
+            self.tick()
+            return
+        if opcode in {Opcode.ADD, Opcode.SUB, Opcode.MUL, Opcode.DIV, Opcode.OR, Opcode.AND, Opcode.XOR, Opcode.MULH}:
                 self.data_path.signal_alu_binary(opcode)
                 self.data_path.latch_sp(Signal.SEL_SP_PREV)
                 self.data_path.latch_tos(Signal.SEL_TOS_ALU)
-                self.data_path.latch_stack()
-                self.signal_latch_pc(self.pc+1)
+                self.latch_pc(Signal.SEL_PC_NEXT)
                 self.step = 0
                 self.tick()
                 return
@@ -366,55 +334,103 @@ class Control_Unit:
             if self.step == 0:
                 self.data_path.signal_alu(opcode)
                 self.data_path.latch_tos(Signal.SEL_TOS_ALU)
-                self.data_path.latch_stack()
-                self.signal_latch_pc(self.pc+1)
+                self.latch_pc(Signal.SEL_PC_NEXT)
                 self.step = 0
                 self.tick()
                 return
-
-        if opcode==Opcode.DUP:
-            self.data_path.stack_push(self.data_path.tos)
+        if opcode == Opcode.NOP:
+            self.latch_pc(Signal.SEL_PC_NEXT)
             self.step = 0
-            self.signal_latch_pc(self.pc+1)
+            self.tick()
+            return
+        if opcode==Opcode.DUP:
+            self.data_path.latch_sp(Signal.SEL_SP_NEXT)
+            self.data_path.signal_latch_stack()
+            self.latch_pc(Signal.SEL_PC_NEXT)
+            self.step = 0
             self.tick()
             return
         if opcode==Opcode.SWAP:
             self.data_path.stack_swap()
+            self.latch_pc(Signal.SEL_PC_NEXT)
             self.step = 0
-            self.signal_latch_pc(self.pc+1)
-            self.data_path.latch_tos(Signal.SEL_TOS_SYNC)
             self.tick()
             pass
         if opcode == Opcode.DROP:
-            self.data_path.stack_pop()
-            self.data_path.latch_tos(Signal.SEL_TOS_SYNC)
+            self.data_path.latch_tos(Signal.SEL_TOS_STACK)
+            self.data_path.latch_sp(Signal.SEL_SP_PREV)
+            self.latch_pc(Signal.SEL_PC_NEXT)
             self.step = 0
-            self.signal_latch_pc(self.pc + 1)
             self.tick()
             return
 
+    def __repr__(self):
+        state_repr = "STATE: {}\tTICK: {:3} PC: {:3}/{} ADDR: {:3} MEM_OUT: {:3} TOS: {:3} SP: {:3}".format(
+            self.state,
+            self._tick,
+            self.pc,
+            self.step,
+            self.data_path.data_address,
+            self.data_path.data_memory[self.data_path.data_address],
+            self.data_path.tos,
+            self.data_path.stack_pointer,
 
-def simulation(code, data, handler_addr,input_tokens, limit):
-    dataPath = DataPath(data,input_tokens,200)
-    control_Unit = Control_Unit(code, dataPath, 200, [], handler_addr)
+        )
+
+        instr = self.program[self.pc]
+        opcode = instr["opcode"]
+        instr_repr = str(opcode)
+        if "arg" in instr:
+            instr_repr += "{}".format(instr["arg"])
+
+        instr_hex = f"{hex(instr_to_bytes(instr))}"
+
+        return "{}\t {:3}\t {}".format(state_repr, instr_repr, instr_hex)
+
+
+def simulation(code, data, handler_addr,schedule,limit):
+    Io_Controller = IOController({0: list(), 1:list(), 2:list()})
+    dataPath = DataPath(data,25, Io_Controller)
+    control_Unit = Control_Unit(code, dataPath, 10, schedule, handler_addr)
+    logging.debug("%s", control_Unit)
     try:
-        while control_Unit._tick <limit:
+        while control_Unit._tick < limit:
             control_Unit.decode_and_execute_instruction()
-    except AssertionError as e:
-        print(e)
-    except StopIteration as e:
-        print("Success!")
-    pass
+            logging.debug("%s", control_Unit)
+    except EOFError:
+        logging.warning("Input buffer is empty!")
+    except StopIteration:
+        pass
+    if control_Unit._tick >= limit:
+        logging.warning("Limit exceeded!")
+    logging.info("output_buffer: %s", repr("".join(Io_Controller.io_ports[1])))
+    return "".join(Io_Controller.io_ports[1]), control_Unit._tick
 
-def main(code_file,data_file, input_file):
+def read_input_schedule(filename):
+    schedule = dict()
+    with open(filename) as f:
+        for line in f:
+            tick, port, value = line.strip().split()
+            if value == "\\0":
+                value = 0
+            else:
+                value = ord(value)
+            tick, port = int(tick), int(port)
+            schedule[tick] = [port,value]
+    return schedule
+def main(code_file,data_file, input_file=None):
     code, handl_addr = from_bytes_to_instructions(code_file)
     data = from_bytes_to_data(data_file)
     if input_file is not None:
-        with open(input_file, encoding="utf-8") as f:
-            input_text = f.read()
-            input_token = []
-            for char in input_text:
-                input_token.append(char)
-    simulation(code,data,handl_addr, None,100)
+        schedule = read_input_schedule(input_file)
+    else:
+        schedule = dict()
+    output, ticks = simulation(code,data,handl_addr,schedule,3000)
+    print("".join(output))
+    print("ticks:", ticks)
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2],None)
+    logging.getLogger().setLevel(logging.DEBUG)
+    if len(sys.argv) >= 4:
+        main(sys.argv[1], sys.argv[2],sys.argv[3])
+    else:
+        main(sys.argv[1],sys.argv[2])
