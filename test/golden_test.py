@@ -1,16 +1,11 @@
-"""Golden тесты транслятора и машины.
-
-Конфигурационнфе файлы: "golden/*_bf.yml"
-"""
-
 import contextlib
 import io
 import logging
 import os
 import tempfile
 
-from src import machine, translator
 import pytest
+from src import machine, translator
 
 MAX_LOG = 4000
 
