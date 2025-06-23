@@ -7,7 +7,6 @@ class Opcode(str, Enum):
     IN = "in"
     OUT = "out"
     ADD = "add" # +
-    ADD2 = "add2" #2+
     SUB = "sub" #-
     MUL = "mul" #*
     MULH = "mulh"
@@ -39,7 +38,7 @@ opcode_to_binary = {
     Opcode.IN: 0x04,
     Opcode.OUT: 0x05,
     Opcode.ADD: 0x06,
-    Opcode.ADD2: 0x07,
+    Opcode.MULH: 0x07,
     Opcode.SUB: 0x08,
     Opcode.MUL: 0x09,
     Opcode.DIV: 0x0A,
@@ -62,7 +61,6 @@ opcode_to_binary = {
     Opcode.DINT: 0x1B,
     Opcode.HALT: 0x1C,
     Opcode.NOP: 0x1D,
-    Opcode.MULH: 0x1E,
 }
 binary_to_opcode = {
     0x01: Opcode.LIT,
@@ -71,7 +69,7 @@ binary_to_opcode = {
     0x04: Opcode.IN,
     0x05: Opcode.OUT,
     0x06: Opcode.ADD,
-    0x07: Opcode.ADD2,
+    0x07: Opcode.MULH,
     0x08: Opcode.SUB,
     0x09: Opcode.MUL,
     0x0A: Opcode.DIV,
@@ -94,7 +92,6 @@ binary_to_opcode = {
     0x1B: Opcode.DINT,
     0x1C: Opcode.HALT,
     0x1D: Opcode.NOP,
-    0x1E: Opcode.MULH
 }
 def instr_to_bytes(instr):
     if instr.get("opcode") in (Opcode.LIT, Opcode.OUT, Opcode.IN):
