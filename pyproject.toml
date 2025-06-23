@@ -1,12 +1,14 @@
 [tool.poetry]
 name = "csa-lab4"
-version = "0.1.0"
-description = "Translator + processor model"
+version = "0.2.0"
+description = "translator + machine."
 authors = ["Almetov Timur <almetovtimur2005@gmail.com>"]
+license = "BSD"
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 
 [tool.poetry.group.dev.dependencies]
 coverage = "^7.2.7"
@@ -77,6 +79,8 @@ select = [
     # ruff-specific advices
     "RUF",
 ]
+- name: Install dependencies
+  run: poetry install --no-root
 ignore = [
     "COM812", # The following rules may cause conflicts when used with the formatter: `COM812`.
     "E501",   # allow lines longer than 80 symbols (up to 120)
@@ -87,8 +91,9 @@ ignore = [
     # to simplify code for non-Python programmers
     "PTH118", # `os.path.join()` should be replaced by `Path` with `/` operator
     "UP032",  # [*] Use f-string instead of `format` call
-
-
+    "PTH103", # `os.makedirs()` should be replaced by `Path.mkdir(parents=True)`
+    "PTH120", # `os.path.dirname()` should be replaced by `Path.parent`
+    "PTH100", # `os.path.abspath()` should be replaced by `Path.resolve()`
 ]
 unfixable = [
     "ERA001", # prohibit to "auto-fix" (=remove) commented-out code
