@@ -1,5 +1,6 @@
 from enum import Enum
 class Opcode(str, Enum):
+    NOP = "nop"
     LIT = "lit"
     STORE = "store" # !
     LOAD = "load" #@
@@ -9,6 +10,7 @@ class Opcode(str, Enum):
     ADD2 = "add2" #2+
     SUB = "sub" #-
     MUL = "mul" #*
+    MULH = "mulh"
     DIV = "div" #/
     INC = "inc"
     DEC = "dec"
@@ -59,6 +61,8 @@ opcode_to_binary = {
     Opcode.EINT: 0x1A,
     Opcode.DINT: 0x1B,
     Opcode.HALT: 0x1C,
+    Opcode.NOP: 0x1D,
+    Opcode.MULH: 0x1E,
 }
 binary_to_opcode = {
     0x01: Opcode.LIT,
@@ -88,24 +92,34 @@ binary_to_opcode = {
     0x19: Opcode.IRET,
     0x1A: Opcode.EINT,
     0x1B: Opcode.DINT,
-    0x1C: Opcode.HALT
+    0x1C: Opcode.HALT,
+    0x1D: Opcode.NOP,
+    0x1E: Opcode.MULH
 }
-def instructions_to_bytes(instructions: list[dict], intr, handler_addr) -> bytes: #происходит правильный перевод для операндов в обратный код
+def instr_to_bytes(instr):
+    if instr.get("opcode") in (Opcode.LIT, Opcode.OUT, Opcode.IN):
+        arg = instr.get("arg", 0)
+        if not -(1 << 25) <= arg < (1 << 25):
+            raise ValueError("Lit argument out of 26-bit range")
+        arg &= (1 << 26) - 1
+        if instr.get("opcode") == Opcode.LIT:
+            binary_instr = (opcode_to_binary[Opcode.LIT] << 26) | arg
+        if instr.get("opcode") == Opcode.IN:
+            binary_instr = (opcode_to_binary[Opcode.IN] << 26) | arg
+        if instr.get("opcode") == Opcode.OUT:
+            binary_instr = (opcode_to_binary[Opcode.OUT] << 26) | arg
+    else:
+        opcode = opcode_to_binary[instr.get("opcode")] & 0x3F
+        binary_instr = opcode << 26
+    return binary_instr
+def instructions_to_bytes(instructions: list[dict], intr, handler_addr) -> bytes:
     binary_bytes = bytearray()
     if intr and handler_addr is not None:
         binary_bytes.extend([(handler_addr >> 24) & 0xFF, (handler_addr >> 16) & 0xFF,(handler_addr >> 8) & 0xFF, handler_addr & 0xFF])
     else:
         binary_bytes.extend([0xFF, 0xFF,0xFF,0xFF])
     for instr in instructions:
-        if instr.get("opcode") == Opcode.LIT:
-            arg  = instr.get("arg",0)
-            if not -(1<<25) <= arg < (1<<25):
-                raise ValueError("Lit argument out of 26-bit range")
-            arg &= (1 << 26) - 1
-            binary_instr = (opcode_to_binary[Opcode.LIT] << 26) | arg
-        else:
-            opcode = opcode_to_binary[instr.get("opcode")] & 0x3F
-            binary_instr = opcode << 26
+        binary_instr = instr_to_bytes(instr)
         binary_bytes.extend([
             (binary_instr >> 24) & 0xFF, (binary_instr >> 16) & 0xFF, (binary_instr >> 8) & 0xFF,binary_instr & 0xFF
         ])
@@ -130,7 +144,7 @@ def write_data(filename,data):
     with open(filename,"wb") as file:
         file.write(data_to_bytes(data))
 
-def from_bytes_to_instructions(filename): # корректно, строки аккуратно
+def from_bytes_to_instructions(filename):
     with open(filename, "rb") as file:
         binary_bytes = file.read()
         instructions = []
@@ -148,16 +162,21 @@ def from_bytes_to_instructions(filename): # корректно, строки а�
             )
             opcode_val = (word >> 26) & 0x3F
             opcode = binary_to_opcode.get(opcode_val, opcode_val)
-            if opcode == Opcode.LIT:
+            if opcode in (Opcode.LIT, Opcode.OUT, Opcode.IN):
                 arg = word & 0x3FFFFFF
                 if arg & (1<<25):
                     arg -= 1<<26
-                instructions.append({"opcode": Opcode.LIT, "arg": arg})
+                if opcode == Opcode.LIT:
+                    instructions.append({"opcode": Opcode.LIT, "arg": arg})
+                if opcode == Opcode.IN:
+                    instructions.append({"opcode": Opcode.IN, "arg": arg})
+                if opcode == Opcode.OUT:
+                    instructions.append({"opcode": Opcode.OUT, "arg": arg})
             else:
                 instructions.append({"opcode": opcode})
     return instructions, handler_addr
 
-def bytes_to_int(byte_arr: bytes) -> int: #корректно
+def bytes_to_int(byte_arr: bytes) -> int:
     word = (
             (byte_arr[0] << 24) |
             (byte_arr[1] << 16) |
@@ -168,7 +187,7 @@ def bytes_to_int(byte_arr: bytes) -> int: #корректно
         word -= 1 << 32
     return word
 
-def from_bytes_to_data(filename): #корректный перевод
+def from_bytes_to_data(filename):
     with open(filename, "rb") as file:
         bytes_array = file.read()
         data = []
