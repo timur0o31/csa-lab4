@@ -2,7 +2,12 @@ import logging
 import sys
 
 from signals import ProcessorState, Signal
-from src.isa import from_bytes_to_data, from_bytes_to_instructions, instr_to_bytes, Opcode
+from src.isa import (
+    from_bytes_to_data,
+    from_bytes_to_instructions,
+    instr_to_bytes,
+    Opcode,
+)
 
 
 class DataPath:
