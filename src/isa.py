@@ -101,6 +101,7 @@ binary_to_opcode = {
 
 
 def instr_to_bytes(instr):
+    binary_instr = 0
     if instr.get("opcode") in (Opcode.LIT, Opcode.OUT, Opcode.IN):
         arg = instr.get("arg", 0)
         if not -(1 << 25) <= arg < (1 << 25):
