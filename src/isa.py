@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from enum import Enum
 
 
@@ -104,8 +106,7 @@ def instr_to_bytes(instr):
     binary_instr = 0
     if instr.get("opcode") in (Opcode.LIT, Opcode.OUT, Opcode.IN):
         arg = instr.get("arg", 0)
-        if not -(1 << 25) <= arg < (1 << 25):
-            raise ValueError("Lit argument out of 26-bit range")
+        assert -(1 << 25) <= arg < (1 << 25), "arg out of 26-bit signed range"
         arg &= (1 << 26) - 1
         if instr.get("opcode") == Opcode.LIT:
             binary_instr = (opcode_to_binary[Opcode.LIT] << 26) | arg
@@ -218,8 +219,7 @@ def instruction_to_mnemonic(instr) -> str:
     name = instr["opcode"].name.lower()
     if "arg" in instr:
         return f"{name} {instr['arg']}"
-    else:
-        return name
+    return name
 
 
 def write_hex_instructions(filename, instructions):

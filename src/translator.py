@@ -1,13 +1,16 @@
-import sys
-from pathlib import Path
+from __future__ import annotations
+
 import os
 import re
+import sys
+from pathlib import Path
+
 from src.isa import (
     Opcode,
-    write_instructions,
     write_data,
     write_hex_data,
     write_hex_instructions,
+    write_instructions,
 )
 
 LABEL_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -46,7 +49,7 @@ def tokenize(text):
             while i < n and text[i] != "\n":
                 i += 1
             continue
-        elif ch in " \t\n":
+        if ch in " \t\n":
             if buf_string:
                 tokens.append(buf_string)
                 buf_string = ""
@@ -144,7 +147,7 @@ def forth_to_assemble(text: str) -> str:
             else_label = f"else_{uid_if_else}"
             end_label = f"end_{uid_if_else}"
             if tok == "!=":
-                cur.append(f"-")
+                cur.append("-")
                 cur.append(f"lit else_{uid_if_else}")
                 cur.append("swap")
                 cur.append("jz")
@@ -170,7 +173,7 @@ def forth_to_assemble(text: str) -> str:
                 cur.append(f"{else_label}:")
                 cur.append("nop")
             cur.append(f"{end_label}:")
-            cur.append(f"nop")
+            cur.append("nop")
             i += 1
             continue
         if tok == "begin":
@@ -199,7 +202,7 @@ def forth_to_assemble(text: str) -> str:
             continue
         if tok in func_labels:
             cur.append(f"lit {tok}")
-            cur.append(f"call")
+            cur.append("call")
             i += 1
             continue
         if tok == "*2":
@@ -234,10 +237,11 @@ def is_number(tok: str) -> bool:
     if tok.startswith("0x"):
         try:
             int(tok, 16)
-            return True
         except ValueError:
             return False
-    if tok.startswith("-"):
+        else:
+            return True
+    elif tok.startswith("-"):
         return tok[1:].isdigit()
     return tok.isdigit()
 
@@ -294,7 +298,7 @@ def first_stage(text: str):
 
         if token == "var":
             if i + 2 >= len_tokens:
-                sys.exit(f"syntax: var <name> <numbers>|<string>")
+                sys.exit("syntax: var <name> <numbers>|<string>")
             name = tokens[i + 1]
             if name in labels:
                 sys.exit(f"duplicate symbol {name}")
@@ -304,7 +308,7 @@ def first_stage(text: str):
                 v = tokens[j]
                 if v == "*":
                     if string_index >= len(strings):
-                        sys.exit(f" string index out of range")
+                        sys.exit(" string index out of range")
                     raw = strings[string_index]
                     processed = bytes(raw, "utf-8").decode("unicode_escape")
                     values.extend(ord(c) for c in processed)
@@ -343,19 +347,19 @@ def first_stage(text: str):
 
         if opcode == Opcode.LIT:
             if i >= len_tokens:
-                sys.exit(f"lit expects literal/label")
+                sys.exit("lit expects literal/label")
             arg_tok = tokens[i]
             i += 1
         elif opcode == Opcode.IN:
             if i >= len_tokens:
-                sys.exit(f"input expects literal/label")
+                sys.exit("input expects literal/label")
             arg_tok = tokens[i]
             if not is_number(arg_tok) or int(arg_tok) != 0:
                 sys.exit(f"IN only supports port 0 (default input device). You wrote IN {arg_tok}")
             i += 1
         elif opcode == Opcode.OUT:
             if i >= len_tokens:
-                sys.exit(f"output expects literal/label")
+                sys.exit("output expects literal/label")
             arg_tok = tokens[i]
             if not is_number(arg_tok) or not (1 <= int(arg_tok) <= 7):
                 sys.exit(f"OUT only supports port [1-7] (default input device). You wrote IN {arg_tok}")

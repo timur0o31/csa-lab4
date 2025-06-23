@@ -1,11 +1,12 @@
-import sys
-from src.isa import Opcode, from_bytes_to_data, from_bytes_to_instructions, instr_to_bytes
-from signals import Signal, ProcessorState
 import logging
+import sys
+
+from signals import ProcessorState, Signal
+from src.isa import Opcode, from_bytes_to_data, from_bytes_to_instructions, instr_to_bytes
 
 
 class DataPath:
-    def __init__(self, data, data_memory_size, stack_capacity, IO_Controller):
+    def __init__(self, data, data_memory_size, stack_capacity, io_controller):
         self.data_size = data_memory_size
         self.data_memory = [0] * data_memory_size
         self.init_data_memory(data)
@@ -18,7 +19,7 @@ class DataPath:
         self.flags = {"Z": 0, "N": 0, "C": 0}
         self.stack_pointer = -1
         self.INT_MAX = 2**32 - 1
-        self.IO_Controller = IO_Controller
+        self.IO_Controller = io_controller
 
     def init_data_memory(self, data):
         for i in range(len(data)):
@@ -123,7 +124,7 @@ class IOController:
         self.io_ports[port].append(chr(value))
 
 
-class Control_Unit:
+class ControlUnit:
     def __init__(
         self, program_memory, data_path: DataPath, call_stack_capacity, input_timetable, interrupt_handler_address
     ):
@@ -143,7 +144,8 @@ class Control_Unit:
 
     def tick(self):
         self._tick += 1
-
+    def current_tick(self):
+        return self._tick
     def latch_pc(self, sel: Signal):
         if sel == Signal.SEL_PC_NEXT:
             self.pc += 1
@@ -173,10 +175,10 @@ class Control_Unit:
     def signal_disable_interrupts(self):
         self.IF = False
 
-    def signal_set_INTR(self):
+    def signal_set_intr(self):
         self.INTR = True
 
-    def signal_reset_INTR(self):
+    def signal_reset_intr(self):
         self.INTR = False
 
     def check_interrupt_request(self):
@@ -186,7 +188,7 @@ class Control_Unit:
             return
         port, value = self.input_timetable[self._tick]
         self.data_path.IO_Controller.push_input_buf(port, value)
-        self.signal_set_INTR()
+        self.signal_set_intr()
 
     def decode_and_execute_instruction(self):
         self.check_interrupt_request()
@@ -196,7 +198,7 @@ class Control_Unit:
             self.state = ProcessorState.INTERRUPTION
             self.tick()
             self.step = 0
-            self.signal_reset_INTR()
+            self.signal_reset_intr()
             return
 
         instr = self.program[self.pc]
@@ -336,7 +338,7 @@ class Control_Unit:
 
         if opcode == Opcode.OUT:
             self.data_path.CU_arg = instr["arg"]
-            assert 1 <= self.data_path.CU_arg <= 7, f"OUT supports ports 1–7. Got port={self.data_path.CU_arg}"
+            assert 1 <= self.data_path.CU_arg <= 7, f"OUT supports ports 1. Got port={self.data_path.CU_arg}"
             self.data_path.signal_write_port()
             self.data_path.latch_tos(Signal.SEL_TOS_STACK)
             self.data_path.latch_sp(Signal.SEL_SP_PREV)
@@ -411,22 +413,22 @@ class Control_Unit:
 
 
 def simulation(code, data, data_size, handler_addr, schedule, limit):
-    Io_Controller = IOController({0: list(), 1: list(), 2: list()})
-    dataPath = DataPath(data, data_size, 25, Io_Controller)
-    control_Unit = Control_Unit(code, dataPath, 10, schedule, handler_addr)
-    logging.debug("%s", control_Unit)
+    io_controller = IOController({0: list(), 1: list(), 2: list()})
+    data_path = DataPath(data, data_size, 25, io_controller)
+    control_unit = ControlUnit(code, data_path, 10, schedule, handler_addr)
+    logging.debug("%s", control_unit)
     try:
-        while control_Unit._tick < limit:
-            control_Unit.decode_and_execute_instruction()
-            logging.debug("%s", control_Unit)
+        while control_unit.current_tick() < limit:
+            control_unit.decode_and_execute_instruction()
+            logging.debug("%s", control_unit)
     except EOFError:
         logging.warning("Input buffer is empty!")
     except StopIteration:
         pass
-    if control_Unit._tick >= limit:
+    if control_unit.current_tick() >= limit:
         logging.warning("Limit exceeded!")
-    logging.info("output_buffer: %s", repr("".join(Io_Controller.io_ports[1])))
-    return "".join(Io_Controller.io_ports[1]), control_Unit._tick
+    logging.info("output_buffer: %s", repr("".join(io_controller.io_ports[1])))
+    return "".join(io_controller.io_ports[1]), control_unit.current_tick()
 
 
 def read_input_schedule(filename):
