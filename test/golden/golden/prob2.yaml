@@ -1,0 +1,243 @@
+in_source: |
+  var result 0
+  var sum1 0
+  var sum2 0
+  var counter 0x0
+  var len
+  : print
+      begin
+          len @ 0 != if
+          48 +
+          out 1
+          len @ dec len !
+          else
+              exit
+          then
+      again
+  ;
+  : int_to_digits
+      begin
+          dup 0 != if
+          dup dup 10 swap /
+          10 * swap - swap 10 swap /
+          len @ inc len !
+          else
+              drop
+              exit
+          then
+      again
+  ;
+  : sum_of_square
+      101
+      begin
+        dup counter @ != if
+        sum1 @
+        counter @ dup *
+        +
+        sum1 !
+        counter @ inc counter !
+        else
+        exit
+        then
+      again
+      drop
+  ;
+  : sum
+      101
+      begin
+        dup counter @ != if
+        sum2 @
+        counter @
+        +
+        sum2 !
+        counter @ inc counter !
+        else
+        exit
+        then
+      again
+      drop
+  ;
+  sum1 @ sum_of_square
+  0 counter !
+  sum2 @ sum
+  sum2 @ dup *
+  sum1 @
+  swap -
+  int_to_digits
+  print
+  halt
+in_stdin: |
+
+out_instructions: !!binary |
+  /////wQAAAAEAAAABAAAAAQAAAEMAAAABAAAV0gAAAAEAAAABAAAAwgAAAAEAAACDAAAAAQAAHhIAAAABAAAAgwAAABcAAAAJAAAAAQAAAEMAAAAWAAAACAAAAAEAAA0SAAAAAQAABtIAAAAcAAAAAQAAAUMAAAABAAAA
+  CAAAAAEAAAsWAAAAEwAAAAEAAAwGAAAABQAAAEEAAAFDAAAADAAAAAEAAAFCAAAAAQAADBEAAAABAAAMSwAAAAsAAAARAAAAHQAAAAEAAAbRAAAAFQAAABcAAAABAAAACAAAAAEAABOWAAAAEwAAABcAAAAXAAAAAQAAA
+  pYAAAAKAAAAAQAAAokAAAAWAAAACAAAABYAAAABAAAClgAAAAoAAAABAAABQwAAAAsAAAABAAABQgAAAAEAABTRAAAAGAAAAAEAABULAAAACwAAABEAAAAdAAAAAQAADREAAAAVAAAAAQAAGVcAAAABAAAAwwAAAAgAAA
+  ABAAAb1gAAABMAAAABAAAAQwAAAAEAAADDAAAAFwAAAAkAAAAGAAAAAQAAAEIAAAABAAAAwwAAAAsAAAABAAAAwgAAAAEAABzRAAAAAQAAHQsAAAALAAAAEQAAAB0AAAABAAAWEQAAABgAAAAVAAAAAQAAGVcAAAABAAAAwwAAAAgAAAABAAAjlgAAABMAAAABAAAAgwAAAAEAAADDAAAABgAAAAEAAACCAAAAAQAAAMMAAAALAAAAAQAAAMIAAAABAAAkkQAAAAEAACTLAAAACwAAABEAAAAdAAAAAQAAHlEAAAAYAAAAFQAAAA=
+out_data: !!binary |
+  AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+out_stdout: |
+  source LoC: 67 code instr: 151
+  ============================================================
+  output_buffer:25164150
+  ticks: 7002
+
+out_instructions_hex: |
+  0 - 04000000 - lit 0
+  1 - 04000000 - lit 0
+  2 - 04000000 - lit 0
+  3 - 04000001 - lit 1
+  4 - 0C000000 - load
+  5 - 04000057 - lit 87
+  6 - 48000000 - call
+  7 - 04000000 - lit 0
+  8 - 04000003 - lit 3
+  9 - 08000000 - store
+  10 - 04000002 - lit 2
+  11 - 0C000000 - load
+  12 - 04000078 - lit 120
+  13 - 48000000 - call
+  14 - 04000002 - lit 2
+  15 - 0C000000 - load
+  16 - 5C000000 - dup
+  17 - 24000000 - mul
+  18 - 04000001 - lit 1
+  19 - 0C000000 - load
+  20 - 58000000 - swap
+  21 - 20000000 - sub
+  22 - 04000034 - lit 52
+  23 - 48000000 - call
+  24 - 0400001B - lit 27
+  25 - 48000000 - call
+  26 - 70000000 - halt
+  27 - 04000005 - lit 5
+  28 - 0C000000 - load
+  29 - 04000000 - lit 0
+  30 - 20000000 - sub
+  31 - 0400002C - lit 44
+  32 - 58000000 - swap
+  33 - 4C000000 - jz
+  34 - 04000030 - lit 48
+  35 - 18000000 - add
+  36 - 14000001 - out 1
+  37 - 04000005 - lit 5
+  38 - 0C000000 - load
+  39 - 30000000 - dec
+  40 - 04000005 - lit 5
+  41 - 08000000 - store
+  42 - 04000030 - lit 48
+  43 - 44000000 - jump
+  44 - 04000031 - lit 49
+  45 - 2C000000 - inc
+  46 - 2C000000 - inc
+  47 - 44000000 - jump
+  48 - 74000000 - nop
+  49 - 0400001B - lit 27
+  50 - 44000000 - jump
+  51 - 54000000 - ret
+  52 - 5C000000 - dup
+  53 - 04000000 - lit 0
+  54 - 20000000 - sub
+  55 - 0400004E - lit 78
+  56 - 58000000 - swap
+  57 - 4C000000 - jz
+  58 - 5C000000 - dup
+  59 - 5C000000 - dup
+  60 - 0400000A - lit 10
+  61 - 58000000 - swap
+  62 - 28000000 - div
+  63 - 0400000A - lit 10
+  64 - 24000000 - mul
+  65 - 58000000 - swap
+  66 - 20000000 - sub
+  67 - 58000000 - swap
+  68 - 0400000A - lit 10
+  69 - 58000000 - swap
+  70 - 28000000 - div
+  71 - 04000005 - lit 5
+  72 - 0C000000 - load
+  73 - 2C000000 - inc
+  74 - 04000005 - lit 5
+  75 - 08000000 - store
+  76 - 04000053 - lit 83
+  77 - 44000000 - jump
+  78 - 60000000 - drop
+  79 - 04000054 - lit 84
+  80 - 2C000000 - inc
+  81 - 2C000000 - inc
+  82 - 44000000 - jump
+  83 - 74000000 - nop
+  84 - 04000034 - lit 52
+  85 - 44000000 - jump
+  86 - 54000000 - ret
+  87 - 04000065 - lit 101
+  88 - 5C000000 - dup
+  89 - 04000003 - lit 3
+  90 - 0C000000 - load
+  91 - 20000000 - sub
+  92 - 0400006F - lit 111
+  93 - 58000000 - swap
+  94 - 4C000000 - jz
+  95 - 04000001 - lit 1
+  96 - 0C000000 - load
+  97 - 04000003 - lit 3
+  98 - 0C000000 - load
+  99 - 5C000000 - dup
+  100 - 24000000 - mul
+  101 - 18000000 - add
+  102 - 04000001 - lit 1
+  103 - 08000000 - store
+  104 - 04000003 - lit 3
+  105 - 0C000000 - load
+  106 - 2C000000 - inc
+  107 - 04000003 - lit 3
+  108 - 08000000 - store
+  109 - 04000073 - lit 115
+  110 - 44000000 - jump
+  111 - 04000074 - lit 116
+  112 - 2C000000 - inc
+  113 - 2C000000 - inc
+  114 - 44000000 - jump
+  115 - 74000000 - nop
+  116 - 04000058 - lit 88
+  117 - 44000000 - jump
+  118 - 60000000 - drop
+  119 - 54000000 - ret
+  120 - 04000065 - lit 101
+  121 - 5C000000 - dup
+  122 - 04000003 - lit 3
+  123 - 0C000000 - load
+  124 - 20000000 - sub
+  125 - 0400008E - lit 142
+  126 - 58000000 - swap
+  127 - 4C000000 - jz
+  128 - 04000002 - lit 2
+  129 - 0C000000 - load
+  130 - 04000003 - lit 3
+  131 - 0C000000 - load
+  132 - 18000000 - add
+  133 - 04000002 - lit 2
+  134 - 08000000 - store
+  135 - 04000003 - lit 3
+  136 - 0C000000 - load
+  137 - 2C000000 - inc
+  138 - 04000003 - lit 3
+  139 - 08000000 - store
+  140 - 04000092 - lit 146
+  141 - 44000000 - jump
+  142 - 04000093 - lit 147
+  143 - 2C000000 - inc
+  144 - 2C000000 - inc
+  145 - 44000000 - jump
+  146 - 74000000 - nop
+  147 - 04000079 - lit 121
+  148 - 44000000 - jump
+  149 - 60000000 - drop
+  150 - 54000000 - ret
+out_data_hex: |
+  0 - 00000000
+  1 - 00000000
+  2 - 00000000
+  3 - 00000000
+  4 - 00000000
+  5 - 00000000
+
