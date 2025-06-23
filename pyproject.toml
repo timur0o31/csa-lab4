@@ -79,8 +79,7 @@ select = [
     # ruff-specific advices
     "RUF",
 ]
-- name: Install dependencies
-  run: poetry install --no-root
+
 ignore = [
     "COM812", # The following rules may cause conflicts when used with the formatter: `COM812`.
     "E501",   # allow lines longer than 80 symbols (up to 120)
