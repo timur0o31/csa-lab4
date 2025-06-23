@@ -1,0 +1,383 @@
+in_source: |
+  var buffer
+  var data_ready
+  : cat
+      begin
+          data_ready @
+          0 != if
+              buffer @
+              0 != if
+                  buffer @
+                  out 1
+              else
+                  exit
+              then
+              0 data_ready !
+          then
+      again
+  ;
+  : interrupt_handler
+      in 0
+      buffer !
+      data_ready 1 !
+  ;
+  0 data_ready !
+  0 buffer !
+  eint
+  cat
+  halt
+in_stdin: |
+  30 0 H
+  90 0 I
+  160 0 !
+  240 0 \0
+out_instructions: !!binary |
+  AAAAKgQAAAAEAAABCAAAAAQAAAAEAAAACAAAAGgAAAAEAAAKSAAAAHAAAAAEAAABDAAAAAQAAAAg
+  AAAABAAAJVgAAABMAAAABAAAAAwAAAAEAAAAIAAAAAQAAB1YAAAATAAAAAQAAAAMAAAAFAAAAQQA
+  ACFEAAAABAAAJywAAAAsAAAARAAAAHQAAAAEAAAABAAAAQgAAAB0AAAAdAAAAAQAAApEAAAAVAAA
+  ABAAAAAEAAAACAAAAAQAAAEEAAABCAAAAGQAAAA=
+out_data: !!binary |
+  AAAAAAAAAAA=
+out_stdout: |
+  source LoC: 28 code instr: 49
+  ============================================================
+  output_buffer:HI!
+  ticks: 277
+
+out_instructions_hex: |
+  0 - 04000000 - lit 0
+  1 - 04000001 - lit 1
+  2 - 08000000 - store
+  3 - 04000000 - lit 0
+  4 - 04000000 - lit 0
+  5 - 08000000 - store
+  6 - 68000000 - eint
+  7 - 0400000A - lit 10
+  8 - 48000000 - call
+  9 - 70000000 - halt
+  10 - 04000001 - lit 1
+  11 - 0C000000 - load
+  12 - 04000000 - lit 0
+  13 - 20000000 - sub
+  14 - 04000025 - lit 37
+  15 - 58000000 - swap
+  16 - 4C000000 - jz
+  17 - 04000000 - lit 0
+  18 - 0C000000 - load
+  19 - 04000000 - lit 0
+  20 - 20000000 - sub
+  21 - 0400001D - lit 29
+  22 - 58000000 - swap
+  23 - 4C000000 - jz
+  24 - 04000000 - lit 0
+  25 - 0C000000 - load
+  26 - 14000001 - out 1
+  27 - 04000021 - lit 33
+  28 - 44000000 - jump
+  29 - 04000027 - lit 39
+  30 - 2C000000 - inc
+  31 - 2C000000 - inc
+  32 - 44000000 - jump
+  33 - 74000000 - nop
+  34 - 04000000 - lit 0
+  35 - 04000001 - lit 1
+  36 - 08000000 - store
+  37 - 74000000 - nop
+  38 - 74000000 - nop
+  39 - 0400000A - lit 10
+  40 - 44000000 - jump
+  41 - 54000000 - ret
+  42 - 10000000 - in 0
+  43 - 04000000 - lit 0
+  44 - 08000000 - store
+  45 - 04000001 - lit 1
+  46 - 04000001 - lit 1
+  47 - 08000000 - store
+  48 - 64000000 - iret
+
+out_data_hex: |
+  0 - 00000000
+  1 - 00000000
+
+
+out_log: |-
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:   0 PC:   0/0 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:  -1	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:   1 PC:   1/0 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:   0	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:   2 PC:   2/0 ADDR:   0 MEM_OUT:   0 TOS:   1 SP:   1	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:   3 PC:   2/1 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:   4 PC:   3/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:   5 PC:   4/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:   6 PC:   5/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:   7 PC:   5/1 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:   0	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:   8 PC:   6/0 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:  -1	 eint	 0x68000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:   9 PC:   7/0 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:  -1	 lit10	 0x400000a
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  10 PC:   8/0 ADDR:   0 MEM_OUT:   0 TOS:  10 SP:   0	 call	 0x48000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  11 PC:  10/0 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  12 PC:  11/0 ADDR:   0 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  13 PC:  11/1 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  14 PC:  12/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  15 PC:  13/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  16 PC:  14/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit37	 0x4000025
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  17 PC:  15/0 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  18 PC:  16/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  19 PC:  16/1 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  20 PC:  37/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  21 PC:  38/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  22 PC:  39/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit10	 0x400000a
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  23 PC:  40/0 ADDR:   1 MEM_OUT:   0 TOS:  10 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  24 PC:  10/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  25 PC:  11/0 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  26 PC:  11/1 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  27 PC:  12/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  28 PC:  13/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  29 PC:  14/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit37	 0x4000025
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  30 PC:  15/0 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  31 PC:  42/0 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   1	 in0	 0x10000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  32 PC:  43/0 ADDR:   1 MEM_OUT:   0 TOS:  72 SP:   2	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  33 PC:  44/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   3	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  34 PC:  44/1 ADDR:   0 MEM_OUT:   0 TOS:  72 SP:   2	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  35 PC:  45/0 ADDR:   0 MEM_OUT:  72 TOS:  37 SP:   1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  36 PC:  46/0 ADDR:   0 MEM_OUT:  72 TOS:   1 SP:   2	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  37 PC:  47/0 ADDR:   0 MEM_OUT:  72 TOS:   1 SP:   3	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  38 PC:  47/1 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   2	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  39 PC:  48/0 ADDR:   1 MEM_OUT:   1 TOS:  37 SP:   1	 iret	 0x64000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  40 PC:  15/0 ADDR:   1 MEM_OUT:   1 TOS:  37 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  41 PC:  16/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  42 PC:  16/1 ADDR:   1 MEM_OUT:   1 TOS:  37 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  43 PC:  37/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  44 PC:  38/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  45 PC:  39/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 lit10	 0x400000a
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  46 PC:  40/0 ADDR:   1 MEM_OUT:   1 TOS:  10 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  47 PC:  10/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  48 PC:  11/0 ADDR:   1 MEM_OUT:   1 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  49 PC:  11/1 ADDR:   1 MEM_OUT:   1 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  50 PC:  12/0 ADDR:   1 MEM_OUT:   1 TOS:   1 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  51 PC:  13/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  52 PC:  14/0 ADDR:   1 MEM_OUT:   1 TOS:  -1 SP:   0	 lit37	 0x4000025
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  53 PC:  15/0 ADDR:   1 MEM_OUT:   1 TOS:  37 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  54 PC:  16/0 ADDR:   1 MEM_OUT:   1 TOS:  -1 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  55 PC:  16/1 ADDR:   1 MEM_OUT:   1 TOS:  37 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  56 PC:  17/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  57 PC:  18/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  58 PC:  18/1 ADDR:   0 MEM_OUT:  72 TOS:   0 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  59 PC:  19/0 ADDR:   0 MEM_OUT:  72 TOS:  72 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  60 PC:  20/0 ADDR:   0 MEM_OUT:  72 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  61 PC:  21/0 ADDR:   0 MEM_OUT:  72 TOS: -72 SP:   0	 lit29	 0x400001d
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  62 PC:  22/0 ADDR:   0 MEM_OUT:  72 TOS:  29 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  63 PC:  23/0 ADDR:   0 MEM_OUT:  72 TOS: -72 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  64 PC:  23/1 ADDR:   0 MEM_OUT:  72 TOS:  29 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  65 PC:  24/0 ADDR:   0 MEM_OUT:  72 TOS:   0 SP:  -1	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  66 PC:  25/0 ADDR:   0 MEM_OUT:  72 TOS:   0 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  67 PC:  25/1 ADDR:   0 MEM_OUT:  72 TOS:   0 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  68 PC:  26/0 ADDR:   0 MEM_OUT:  72 TOS:  72 SP:   0	 out1	 0x14000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  69 PC:  27/0 ADDR:   0 MEM_OUT:  72 TOS:   0 SP:  -1	 lit33	 0x4000021
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  70 PC:  28/0 ADDR:   0 MEM_OUT:  72 TOS:  33 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  71 PC:  33/0 ADDR:   0 MEM_OUT:  72 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  72 PC:  34/0 ADDR:   0 MEM_OUT:  72 TOS:   0 SP:  -1	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  73 PC:  35/0 ADDR:   0 MEM_OUT:  72 TOS:   0 SP:   0	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  74 PC:  36/0 ADDR:   0 MEM_OUT:  72 TOS:   1 SP:   1	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  75 PC:  36/1 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:   0	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  76 PC:  37/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  77 PC:  38/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  78 PC:  39/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit10	 0x400000a
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  79 PC:  40/0 ADDR:   1 MEM_OUT:   0 TOS:  10 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  80 PC:  10/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  81 PC:  11/0 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  82 PC:  11/1 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  83 PC:  12/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  84 PC:  13/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  85 PC:  14/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit37	 0x4000025
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  86 PC:  15/0 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  87 PC:  16/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  88 PC:  16/1 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  89 PC:  37/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK:  90 PC:  38/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  91 PC:  42/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 in0	 0x10000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  92 PC:  43/0 ADDR:   1 MEM_OUT:   0 TOS:  73 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  93 PC:  44/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  94 PC:  44/1 ADDR:   0 MEM_OUT:  72 TOS:  73 SP:   0	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  95 PC:  45/0 ADDR:   0 MEM_OUT:  73 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  96 PC:  46/0 ADDR:   0 MEM_OUT:  73 TOS:   1 SP:   0	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  97 PC:  47/0 ADDR:   0 MEM_OUT:  73 TOS:   1 SP:   1	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  98 PC:  47/1 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK:  99 PC:  48/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 iret	 0x64000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 100 PC:  38/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 101 PC:  39/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 lit10	 0x400000a
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 102 PC:  40/0 ADDR:   1 MEM_OUT:   1 TOS:  10 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 103 PC:  10/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 104 PC:  11/0 ADDR:   1 MEM_OUT:   1 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 105 PC:  11/1 ADDR:   1 MEM_OUT:   1 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 106 PC:  12/0 ADDR:   1 MEM_OUT:   1 TOS:   1 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 107 PC:  13/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 108 PC:  14/0 ADDR:   1 MEM_OUT:   1 TOS:  -1 SP:   0	 lit37	 0x4000025
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 109 PC:  15/0 ADDR:   1 MEM_OUT:   1 TOS:  37 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 110 PC:  16/0 ADDR:   1 MEM_OUT:   1 TOS:  -1 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 111 PC:  16/1 ADDR:   1 MEM_OUT:   1 TOS:  37 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 112 PC:  17/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 113 PC:  18/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 114 PC:  18/1 ADDR:   0 MEM_OUT:  73 TOS:   0 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 115 PC:  19/0 ADDR:   0 MEM_OUT:  73 TOS:  73 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 116 PC:  20/0 ADDR:   0 MEM_OUT:  73 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 117 PC:  21/0 ADDR:   0 MEM_OUT:  73 TOS: -73 SP:   0	 lit29	 0x400001d
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 118 PC:  22/0 ADDR:   0 MEM_OUT:  73 TOS:  29 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 119 PC:  23/0 ADDR:   0 MEM_OUT:  73 TOS: -73 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 120 PC:  23/1 ADDR:   0 MEM_OUT:  73 TOS:  29 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 121 PC:  24/0 ADDR:   0 MEM_OUT:  73 TOS:   0 SP:  -1	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 122 PC:  25/0 ADDR:   0 MEM_OUT:  73 TOS:   0 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 123 PC:  25/1 ADDR:   0 MEM_OUT:  73 TOS:   0 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 124 PC:  26/0 ADDR:   0 MEM_OUT:  73 TOS:  73 SP:   0	 out1	 0x14000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 125 PC:  27/0 ADDR:   0 MEM_OUT:  73 TOS:   0 SP:  -1	 lit33	 0x4000021
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 126 PC:  28/0 ADDR:   0 MEM_OUT:  73 TOS:  33 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 127 PC:  33/0 ADDR:   0 MEM_OUT:  73 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 128 PC:  34/0 ADDR:   0 MEM_OUT:  73 TOS:   0 SP:  -1	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 129 PC:  35/0 ADDR:   0 MEM_OUT:  73 TOS:   0 SP:   0	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 130 PC:  36/0 ADDR:   0 MEM_OUT:  73 TOS:   1 SP:   1	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 131 PC:  36/1 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:   0	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 132 PC:  37/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 133 PC:  38/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 134 PC:  39/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit10	 0x400000a
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 135 PC:  40/0 ADDR:   1 MEM_OUT:   0 TOS:  10 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 136 PC:  10/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 137 PC:  11/0 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 138 PC:  11/1 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 139 PC:  12/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 140 PC:  13/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 141 PC:  14/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit37	 0x4000025
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 142 PC:  15/0 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 143 PC:  16/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 144 PC:  16/1 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 145 PC:  37/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 146 PC:  38/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 147 PC:  39/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit10	 0x400000a
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 148 PC:  40/0 ADDR:   1 MEM_OUT:   0 TOS:  10 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 149 PC:  10/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 150 PC:  11/0 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 151 PC:  11/1 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 152 PC:  12/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 153 PC:  13/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 154 PC:  14/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit37	 0x4000025
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 155 PC:  15/0 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 156 PC:  16/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 157 PC:  16/1 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 158 PC:  37/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 159 PC:  38/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 160 PC:  39/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit10	 0x400000a
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 161 PC:  42/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 in0	 0x10000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 162 PC:  43/0 ADDR:   1 MEM_OUT:   0 TOS:  33 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 163 PC:  44/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 164 PC:  44/1 ADDR:   0 MEM_OUT:  73 TOS:  33 SP:   0	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 165 PC:  45/0 ADDR:   0 MEM_OUT:  33 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 166 PC:  46/0 ADDR:   0 MEM_OUT:  33 TOS:   1 SP:   0	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 167 PC:  47/0 ADDR:   0 MEM_OUT:  33 TOS:   1 SP:   1	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 168 PC:  47/1 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 169 PC:  48/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 iret	 0x64000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 170 PC:  39/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 lit10	 0x400000a
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 171 PC:  40/0 ADDR:   1 MEM_OUT:   1 TOS:  10 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 172 PC:  10/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 173 PC:  11/0 ADDR:   1 MEM_OUT:   1 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 174 PC:  11/1 ADDR:   1 MEM_OUT:   1 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 175 PC:  12/0 ADDR:   1 MEM_OUT:   1 TOS:   1 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 176 PC:  13/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 177 PC:  14/0 ADDR:   1 MEM_OUT:   1 TOS:  -1 SP:   0	 lit37	 0x4000025
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 178 PC:  15/0 ADDR:   1 MEM_OUT:   1 TOS:  37 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 179 PC:  16/0 ADDR:   1 MEM_OUT:   1 TOS:  -1 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 180 PC:  16/1 ADDR:   1 MEM_OUT:   1 TOS:  37 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 181 PC:  17/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 182 PC:  18/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 183 PC:  18/1 ADDR:   0 MEM_OUT:  33 TOS:   0 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 184 PC:  19/0 ADDR:   0 MEM_OUT:  33 TOS:  33 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 185 PC:  20/0 ADDR:   0 MEM_OUT:  33 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 186 PC:  21/0 ADDR:   0 MEM_OUT:  33 TOS: -33 SP:   0	 lit29	 0x400001d
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 187 PC:  22/0 ADDR:   0 MEM_OUT:  33 TOS:  29 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 188 PC:  23/0 ADDR:   0 MEM_OUT:  33 TOS: -33 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 189 PC:  23/1 ADDR:   0 MEM_OUT:  33 TOS:  29 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 190 PC:  24/0 ADDR:   0 MEM_OUT:  33 TOS:   0 SP:  -1	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 191 PC:  25/0 ADDR:   0 MEM_OUT:  33 TOS:   0 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 192 PC:  25/1 ADDR:   0 MEM_OUT:  33 TOS:   0 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 193 PC:  26/0 ADDR:   0 MEM_OUT:  33 TOS:  33 SP:   0	 out1	 0x14000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 194 PC:  27/0 ADDR:   0 MEM_OUT:  33 TOS:   0 SP:  -1	 lit33	 0x4000021
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 195 PC:  28/0 ADDR:   0 MEM_OUT:  33 TOS:  33 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 196 PC:  33/0 ADDR:   0 MEM_OUT:  33 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 197 PC:  34/0 ADDR:   0 MEM_OUT:  33 TOS:   0 SP:  -1	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 198 PC:  35/0 ADDR:   0 MEM_OUT:  33 TOS:   0 SP:   0	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 199 PC:  36/0 ADDR:   0 MEM_OUT:  33 TOS:   1 SP:   1	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 200 PC:  36/1 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:   0	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 201 PC:  37/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 202 PC:  38/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 203 PC:  39/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit10	 0x400000a
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 204 PC:  40/0 ADDR:   1 MEM_OUT:   0 TOS:  10 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 205 PC:  10/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 206 PC:  11/0 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 207 PC:  11/1 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 208 PC:  12/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 209 PC:  13/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 210 PC:  14/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit37	 0x4000025
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 211 PC:  15/0 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 212 PC:  16/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 213 PC:  16/1 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 214 PC:  37/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 215 PC:  38/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 216 PC:  39/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit10	 0x400000a
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 217 PC:  40/0 ADDR:   1 MEM_OUT:   0 TOS:  10 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 218 PC:  10/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 219 PC:  11/0 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 220 PC:  11/1 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 221 PC:  12/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 222 PC:  13/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 223 PC:  14/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit37	 0x4000025
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 224 PC:  15/0 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 225 PC:  16/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 226 PC:  16/1 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 227 PC:  37/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 228 PC:  38/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 229 PC:  39/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit10	 0x400000a
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 230 PC:  40/0 ADDR:   1 MEM_OUT:   0 TOS:  10 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 231 PC:  10/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 232 PC:  11/0 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 233 PC:  11/1 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 234 PC:  12/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 235 PC:  13/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 236 PC:  14/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit37	 0x4000025
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 237 PC:  15/0 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 238 PC:  16/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 239 PC:  16/1 ADDR:   1 MEM_OUT:   0 TOS:  37 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 240 PC:  37/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 241 PC:  42/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:  -1	 in0	 0x10000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 242 PC:  43/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 243 PC:  44/0 ADDR:   1 MEM_OUT:   0 TOS:   0 SP:   1	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 244 PC:  44/1 ADDR:   0 MEM_OUT:  33 TOS:   0 SP:   0	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 245 PC:  45/0 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 246 PC:  46/0 ADDR:   0 MEM_OUT:   0 TOS:   1 SP:   0	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 247 PC:  47/0 ADDR:   0 MEM_OUT:   0 TOS:   1 SP:   1	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 248 PC:  47/1 ADDR:   1 MEM_OUT:   0 TOS:   1 SP:   0	 store	 0x8000000
+  DEBUG   machine:simulation    STATE: ProcessorState.INTERRUPTION	TICK: 249 PC:  48/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 iret	 0x64000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 250 PC:  37/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 251 PC:  38/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 nop	 0x74000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 252 PC:  39/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 lit10	 0x400000a
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 253 PC:  40/0 ADDR:   1 MEM_OUT:   1 TOS:  10 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 254 PC:  10/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 lit1	 0x4000001
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 255 PC:  11/0 ADDR:   1 MEM_OUT:   1 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 256 PC:  11/1 ADDR:   1 MEM_OUT:   1 TOS:   1 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 257 PC:  12/0 ADDR:   1 MEM_OUT:   1 TOS:   1 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 258 PC:  13/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 259 PC:  14/0 ADDR:   1 MEM_OUT:   1 TOS:  -1 SP:   0	 lit37	 0x4000025
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 260 PC:  15/0 ADDR:   1 MEM_OUT:   1 TOS:  37 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 261 PC:  16/0 ADDR:   1 MEM_OUT:   1 TOS:  -1 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 262 PC:  16/1 ADDR:   1 MEM_OUT:   1 TOS:  37 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 263 PC:  17/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:  -1	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 264 PC:  18/0 ADDR:   1 MEM_OUT:   1 TOS:   0 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 265 PC:  18/1 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:   0	 load	 0xc000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 266 PC:  19/0 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:   0	 lit0	 0x4000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 267 PC:  20/0 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:   1	 sub	 0x20000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 268 PC:  21/0 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:   0	 lit29	 0x400001d
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 269 PC:  22/0 ADDR:   0 MEM_OUT:   0 TOS:  29 SP:   1	 swap	 0x58000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 270 PC:  23/0 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:   1	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 271 PC:  23/1 ADDR:   0 MEM_OUT:   0 TOS:  29 SP:   0	 jz 	 0x4c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 272 PC:  29/0 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:  -1	 lit39	 0x4000027
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 273 PC:  30/0 ADDR:   0 MEM_OUT:   0 TOS:  39 SP:   0	 inc	 0x2c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 274 PC:  31/0 ADDR:   0 MEM_OUT:   0 TOS:  40 SP:   0	 inc	 0x2c000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 275 PC:  32/0 ADDR:   0 MEM_OUT:   0 TOS:  41 SP:   0	 jump	 0x44000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 276 PC:  41/0 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:  -1	 ret	 0x54000000
+  DEBUG   machine:simulation    STATE: ProcessorState.NORMAL	TICK: 277 PC:   9/0 ADDR:   0 MEM_OUT:   0 TOS:   0 SP:  -1	 halt	 0x70000000
+  INFO    machine:simulation    output_buffer: 'HI!'
+  EOF
