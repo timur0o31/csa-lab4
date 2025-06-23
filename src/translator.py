@@ -430,7 +430,7 @@ def main(source, code_file, data_file):
         write_data(data_file, data_words)
         write_hex_instructions(code_file + ".hex", instructions)
         write_hex_data(data_file + ".hex", data_words)
-    print("source LoC:", len(source.split("\n")), "code instr:", len(instructions))
+    print("source LoC:", len(forth_text.split("\n")), "code instr:", len(instructions))
 
 
 if __name__ == "__main__":
