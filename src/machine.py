@@ -2,6 +2,7 @@ import logging
 import sys
 
 from signals import ProcessorState, Signal
+
 from src.isa import (
     Opcode,
     from_bytes_to_data,
