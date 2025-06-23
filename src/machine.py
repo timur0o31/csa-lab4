@@ -3,8 +3,9 @@ from src.isa import Opcode, from_bytes_to_data, from_bytes_to_instructions, inst
 from signals import Signal, ProcessorState
 import logging
 
+
 class DataPath:
-    def __init__(self,data,data_memory_size, stack_capacity,IO_Controller):
+    def __init__(self, data, data_memory_size, stack_capacity, IO_Controller):
         self.data_size = data_memory_size
         self.data_memory = [0] * data_memory_size
         self.init_data_memory(data)
@@ -14,15 +15,16 @@ class DataPath:
         self.data_address = 0
         self.CU_arg = 0
         self.result_alu = 0
-        self.flags = {"Z":0, "N":0, "C":0}
+        self.flags = {"Z": 0, "N": 0, "C": 0}
         self.stack_pointer = -1
-        self.INT_MAX = 2**32 - 1
+        self.INT_MAX = 2 ** 32 - 1
         self.IO_Controller = IO_Controller
 
     def init_data_memory(self, data):
         for i in range(len(data)):
             assert 0 <= i <= self.data_size, "data memory overflow"
             self.data_memory[i] = data[i]
+
     def signal_memory_store(self):
         addr = self.data_address
         assert -1 < addr < len(self.data_memory), ""
@@ -43,7 +45,7 @@ class DataPath:
             self.stack[self.stack_pointer] = 0
             self.stack_pointer -= 1
 
-    def latch_tos(self, sel : Signal):
+    def latch_tos(self, sel: Signal):
         if sel == Signal.SEL_TOS_STACK:
             self.tos = self.stack[self.stack_pointer]
         elif sel == Signal.SEL_TOS_CU_ARG:
@@ -55,7 +57,7 @@ class DataPath:
         elif sel == Signal.SEL_TOS_IN:
             self.tos = self.IO_Controller.input(self.CU_arg)
 
-    def signal_alu_binary(self,opcode):
+    def signal_alu_binary(self, opcode):
         assert self.stack_pointer >= 1, f"Not enough elements on stack {self.stack_pointer}, {self.stack}"
         a = self.tos
         b = self.stack[self.stack_pointer]
@@ -77,11 +79,12 @@ class DataPath:
             wide = a * b
             result = (wide >> 32) & 0xFFFFFFFF
         elif opcode == Opcode.DIV:
-            result = a//b
+            result = a // b
         elif opcode == Opcode.XOR:
             result = a ^ b
         self.result_alu = result
-    def signal_alu(self,opcode):
+
+    def signal_alu(self, opcode):
         assert self.stack_pointer >= 0, "Not enough elements on stack"
         result = 0
         if opcode == Opcode.INC:
@@ -94,29 +97,35 @@ class DataPath:
 
     def signal_latch_zero_flag(self):
         self.flags["Z"] = int(self.tos == 0)
+
     def signal_latch_negative_flag(self):
         self.flags["N"] = int(self.tos < 0)
+
     def signal_write_port(self):
         self.IO_Controller.output(self.CU_arg, self.tos)
+
     def stack_swap(self):
         assert self.stack_pointer >= 0, "data stack underflow"
         self.stack[self.stack_pointer], self.tos = self.tos, self.stack[self.stack_pointer]
 
 
 class IOController:
-    def __init__(self,io_ports):
-        self.io_ports = io_ports  #port -> list
-    def push_input_buf(self,port,value):
+    def __init__(self, io_ports):
+        self.io_ports = io_ports  # port -> list
+
+    def push_input_buf(self, port, value):
         self.io_ports[port].append(value)
+
     def input(self, port):
         return self.io_ports[port].pop(0)
-    def output(self,port,value):
+
+    def output(self, port, value):
         self.io_ports[port].append(chr(value))
 
 
-
 class Control_Unit:
-    def __init__(self,program_memory,data_path: DataPath, call_stack_capacity, input_timetable, interrupt_handler_address):
+    def __init__(self, program_memory, data_path: DataPath, call_stack_capacity, input_timetable,
+                 interrupt_handler_address):
         self.IF = False
         self.INTR = False
         self.interrupt_handler_address = interrupt_handler_address
@@ -133,6 +142,7 @@ class Control_Unit:
 
     def tick(self):
         self._tick += 1
+
     def latch_pc(self, sel: Signal):
         if sel == Signal.SEL_PC_NEXT:
             self.pc += 1
@@ -142,6 +152,7 @@ class Control_Unit:
             self.pc = self.interrupt_handler_address
         elif sel == Signal.SEL_PC_RET:
             self.pc = self.call_stack[self.scp]
+
     def latch_scp(self, sel: Signal):
         if sel == Signal.SEL_SCP_NEXT:
             assert self.scp < len(self.call_stack), "call stack capacity exceeded"
@@ -154,14 +165,19 @@ class Control_Unit:
 
     def signal_store_pc(self):
         self.call_stack[self.scp] = self.pc
+
     def signal_enable_interrupts(self):
         self.IF = True
+
     def signal_disable_interrupts(self):
         self.IF = False
+
     def signal_set_INTR(self):
         self.INTR = True
+
     def signal_reset_INTR(self):
         self.INTR = False
+
     def check_interrupt_request(self):
         if self._tick not in self.input_timetable.keys():
             return
@@ -170,16 +186,17 @@ class Control_Unit:
         port, value = self.input_timetable[self._tick]
         self.data_path.IO_Controller.push_input_buf(port, value)
         self.signal_set_INTR()
+
     def decode_and_execute_instruction(self):
         self.check_interrupt_request()
         if self.INTR and self.step == 0:
-                self.return_addr = self.pc
-                self.latch_pc(Signal.SEL_PC_INT)
-                self.state = ProcessorState.INTERRUPTION
-                self.tick()
-                self.step = 0
-                self.signal_reset_INTR()
-                return
+            self.return_addr = self.pc
+            self.latch_pc(Signal.SEL_PC_INT)
+            self.state = ProcessorState.INTERRUPTION
+            self.tick()
+            self.step = 0
+            self.signal_reset_INTR()
+            return
 
         instr = self.program[self.pc]
         opcode = instr["opcode"]
@@ -327,13 +344,13 @@ class Control_Unit:
             self.tick()
             return
         if opcode in {Opcode.ADD, Opcode.SUB, Opcode.MUL, Opcode.DIV, Opcode.OR, Opcode.AND, Opcode.XOR, Opcode.MULH}:
-                self.data_path.signal_alu_binary(opcode)
-                self.data_path.latch_sp(Signal.SEL_SP_PREV)
-                self.data_path.latch_tos(Signal.SEL_TOS_ALU)
-                self.latch_pc(Signal.SEL_PC_NEXT)
-                self.step = 0
-                self.tick()
-                return
+            self.data_path.signal_alu_binary(opcode)
+            self.data_path.latch_sp(Signal.SEL_SP_PREV)
+            self.data_path.latch_tos(Signal.SEL_TOS_ALU)
+            self.latch_pc(Signal.SEL_PC_NEXT)
+            self.step = 0
+            self.tick()
+            return
 
         if opcode in {Opcode.INC, Opcode.DEC, Opcode.NOT}:
             if self.step == 0:
@@ -348,14 +365,14 @@ class Control_Unit:
             self.step = 0
             self.tick()
             return
-        if opcode==Opcode.DUP:
+        if opcode == Opcode.DUP:
             self.data_path.latch_sp(Signal.SEL_SP_NEXT)
             self.data_path.signal_latch_stack()
             self.latch_pc(Signal.SEL_PC_NEXT)
             self.step = 0
             self.tick()
             return
-        if opcode==Opcode.SWAP:
+        if opcode == Opcode.SWAP:
             self.data_path.stack_swap()
             self.latch_pc(Signal.SEL_PC_NEXT)
             self.step = 0
@@ -393,9 +410,9 @@ class Control_Unit:
         return "{}\t {:3}\t {}".format(state_repr, instr_repr, instr_hex)
 
 
-def simulation(code, data,data_size, handler_addr,schedule,limit):
-    Io_Controller = IOController({0: list(), 1:list(), 2:list()})
-    dataPath = DataPath(data,data_size,25, Io_Controller)
+def simulation(code, data, data_size, handler_addr, schedule, limit):
+    Io_Controller = IOController({0: list(), 1: list(), 2: list()})
+    dataPath = DataPath(data, data_size, 25, Io_Controller)
     control_Unit = Control_Unit(code, dataPath, 10, schedule, handler_addr)
     logging.debug("%s", control_Unit)
     try:
@@ -411,6 +428,7 @@ def simulation(code, data,data_size, handler_addr,schedule,limit):
     logging.info("output_buffer: %s", repr("".join(Io_Controller.io_ports[1])))
     return "".join(Io_Controller.io_ports[1]), control_Unit._tick
 
+
 def read_input_schedule(filename):
     schedule = dict()
     with open(filename) as f:
@@ -421,16 +439,18 @@ def read_input_schedule(filename):
             else:
                 value = ord(value)
             tick, port = int(tick), int(port)
-            schedule[tick] = [port,value]
+            schedule[tick] = [port, value]
     return schedule
 
-def main(code_file,data_file, input_file):
+
+def main(code_file, data_file, input_file):
     code, handl_addr = from_bytes_to_instructions(code_file)
     data = from_bytes_to_data(data_file)
     schedule = read_input_schedule(input_file)
-    output, ticks = simulation(code,data,200,handl_addr,schedule,10000)
+    output, ticks = simulation(code, data, 200, handl_addr, schedule, 10000)
     print(f"output_buffer:{''.join(output)}")
     print("ticks:", ticks)
+
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.DEBUG)

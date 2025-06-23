@@ -1,16 +1,18 @@
 from enum import Enum
+
+
 class Opcode(str, Enum):
     NOP = "nop"
     LIT = "lit"
-    STORE = "store" # !
-    LOAD = "load" #@
+    STORE = "store"  # !
+    LOAD = "load"  # @
     IN = "in"
     OUT = "out"
-    ADD = "add" # +
-    SUB = "sub" #-
-    MUL = "mul" #*
+    ADD = "add"  # +
+    SUB = "sub"  # -
+    MUL = "mul"  # *
     MULH = "mulh"
-    DIV = "div" #/
+    DIV = "div"  # /
     INC = "inc"
     DEC = "dec"
     AND = "and"
@@ -21,7 +23,7 @@ class Opcode(str, Enum):
     CALL = "call"
     JZ = "jz"
     JN = "jn"
-    RET = "ret" # ;
+    RET = "ret"  # ;
     SWAP = "swap"
     DUP = "dup"
     DROP = "drop"
@@ -29,8 +31,11 @@ class Opcode(str, Enum):
     EINT = "eint"
     DINT = "dint"
     HALT = "halt"
+
     def __str__(self):
         return str(self.value)
+
+
 opcode_to_binary = {
     Opcode.LIT: 0x01,
     Opcode.STORE: 0x02,
@@ -93,6 +98,8 @@ binary_to_opcode = {
     0x1C: Opcode.HALT,
     0x1D: Opcode.NOP,
 }
+
+
 def instr_to_bytes(instr):
     if instr.get("opcode") in (Opcode.LIT, Opcode.OUT, Opcode.IN):
         arg = instr.get("arg", 0)
@@ -110,18 +117,21 @@ def instr_to_bytes(instr):
         binary_instr = opcode << 26
     return binary_instr
 
+
 def instructions_to_bytes(instructions: list[dict], intr, handler_addr) -> bytes:
     binary_bytes = bytearray()
     if intr and handler_addr is not None:
-        binary_bytes.extend([(handler_addr >> 24) & 0xFF, (handler_addr >> 16) & 0xFF,(handler_addr >> 8) & 0xFF, handler_addr & 0xFF])
+        binary_bytes.extend(
+            [(handler_addr >> 24) & 0xFF, (handler_addr >> 16) & 0xFF, (handler_addr >> 8) & 0xFF, handler_addr & 0xFF])
     else:
-        binary_bytes.extend([0xFF, 0xFF,0xFF,0xFF])
+        binary_bytes.extend([0xFF, 0xFF, 0xFF, 0xFF])
     for instr in instructions:
         binary_instr = instr_to_bytes(instr)
         binary_bytes.extend([
-            (binary_instr >> 24) & 0xFF, (binary_instr >> 16) & 0xFF, (binary_instr >> 8) & 0xFF,binary_instr & 0xFF
+            (binary_instr >> 24) & 0xFF, (binary_instr >> 16) & 0xFF, (binary_instr >> 8) & 0xFF, binary_instr & 0xFF
         ])
     return bytes(binary_bytes)
+
 
 def data_to_bytes(data: list[int]) -> bytes:
     binary_bytes = bytearray()
@@ -134,13 +144,16 @@ def data_to_bytes(data: list[int]) -> bytes:
         ])
     return bytes(binary_bytes)
 
-def write_instructions(filename,instructions, intr, handler_addr):
-    with open(filename,"wb") as file:
-        file.write(instructions_to_bytes(instructions,intr, handler_addr))
 
-def write_data(filename,data):
-    with open(filename,"wb") as file:
+def write_instructions(filename, instructions, intr, handler_addr):
+    with open(filename, "wb") as file:
+        file.write(instructions_to_bytes(instructions, intr, handler_addr))
+
+
+def write_data(filename, data):
+    with open(filename, "wb") as file:
         file.write(data_to_bytes(data))
+
 
 def from_bytes_to_instructions(filename):
     with open(filename, "rb") as file:
@@ -149,8 +162,8 @@ def from_bytes_to_instructions(filename):
         handler_addr = ((binary_bytes[0] << 24) |
                         (binary_bytes[1] << 16) |
                         (binary_bytes[2] << 8) |
-                         binary_bytes[3]
-        )
+                        binary_bytes[3]
+                        )
         for i in range(4, len(binary_bytes), 4):
             word = (
                     (binary_bytes[i] << 24) |
@@ -162,8 +175,8 @@ def from_bytes_to_instructions(filename):
             opcode = binary_to_opcode.get(opcode_val, opcode_val)
             if opcode in (Opcode.LIT, Opcode.OUT, Opcode.IN):
                 arg = word & 0x3FFFFFF
-                if arg & (1<<25):
-                    arg -= 1<<26
+                if arg & (1 << 25):
+                    arg -= 1 << 26
                 if opcode == Opcode.LIT:
                     instructions.append({"opcode": Opcode.LIT, "arg": arg})
                 if opcode == Opcode.IN:
@@ -173,6 +186,7 @@ def from_bytes_to_instructions(filename):
             else:
                 instructions.append({"opcode": opcode})
     return instructions, handler_addr
+
 
 def bytes_to_int(byte_arr: bytes) -> int:
     word = (
@@ -185,20 +199,23 @@ def bytes_to_int(byte_arr: bytes) -> int:
         word -= 1 << 32
     return word
 
+
 def from_bytes_to_data(filename):
     with open(filename, "rb") as file:
         bytes_array = file.read()
         data = []
-        for i in range(0,len(bytes_array),4):
-            word = (bytes_to_int(bytes_array[i:i+4]))
+        for i in range(0, len(bytes_array), 4):
+            word = (bytes_to_int(bytes_array[i:i + 4]))
             data.append(word)
     return data
+
 
 def write_hex_data(filename, data, start_addr=0):
     with open(filename, "w", encoding="utf-8") as f:
         for i, value in enumerate(data, start=start_addr):
             hex_str = f"{value & 0xFFFFFFFF:08X}"
             f.write(f"{i} - {hex_str}\n")
+
 
 def instruction_to_hex(instr) -> str:
     if instr["opcode"] in (Opcode.LIT, Opcode.OUT, Opcode.IN):
@@ -211,12 +228,14 @@ def instruction_to_hex(instr) -> str:
         machine_code = opcode << 26
     return f"{machine_code:08X}"
 
+
 def instruction_to_mnemonic(instr) -> str:
     name = instr["opcode"].name.lower()
     if "arg" in instr:
         return f"{name} {instr['arg']}"
     else:
         return name
+
 
 def write_hex_instructions(filename, instructions):
     with open(filename, "w", encoding="utf-8") as f:
