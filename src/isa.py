@@ -4,15 +4,15 @@ from enum import Enum
 class Opcode(str, Enum):
     NOP = "nop"
     LIT = "lit"
-    STORE = "store"  # !
-    LOAD = "load"  # @
+    STORE = "store"  
+    LOAD = "load"  
     IN = "in"
     OUT = "out"
-    ADD = "add"  # +
-    SUB = "sub"  # -
-    MUL = "mul"  # *
+    ADD = "add"  
+    SUB = "sub"  
+    MUL = "mul"  
     MULH = "mulh"
-    DIV = "div"  # /
+    DIV = "div"  
     INC = "inc"
     DEC = "dec"
     AND = "and"
@@ -23,7 +23,7 @@ class Opcode(str, Enum):
     CALL = "call"
     JZ = "jz"
     JN = "jn"
-    RET = "ret"  # ;
+    RET = "ret"  
     SWAP = "swap"
     DUP = "dup"
     DROP = "drop"
