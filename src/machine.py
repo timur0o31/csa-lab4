@@ -144,8 +144,10 @@ class ControlUnit:
 
     def tick(self):
         self._tick += 1
+
     def current_tick(self):
         return self._tick
+
     def latch_pc(self, sel: Signal):
         if sel == Signal.SEL_PC_NEXT:
             self.pc += 1
