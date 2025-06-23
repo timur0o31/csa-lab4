@@ -417,10 +417,7 @@ def assemble(source: str):
 
 
 def main(source, code_file, data_file):
-    with open(source, encoding="utf-8") as f:
-        source = f.read()
-
-    forth_path = Path(sys.argv[1])
+    forth_path = Path(source)
     forth_text = forth_path.read_text(encoding="utf-8")
     asm_text = forth_to_assemble(forth_text)
     instructions, data_words, intr, addr_handler = assemble(asm_text)
