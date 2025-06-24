@@ -259,11 +259,10 @@ var res 0
 │  опкод  |                     0x00000                              │
 └─────────┴──────────────────────────────────────────────────────────┘
 ```
-Коды операций:
 ### Прерывания
 ## Транслятор
 Интерфейс командной строки: translator.py <input_file> <target_instructions_file> <target_data_file>
-Реализация транслятора 
+Реализация транслятора: [translator.py](src/translator.py)
 Этапы трансляции:
 - Лексический разбор: удаляются комментарии, выделяются строковые литералы, разбивается остальное на токены.
 - Перевод управляющих конструкций в набор инструкций.
@@ -271,14 +270,25 @@ var res 0
 - Анализ кода и связывание меток с адресами
 - Генерация машинного кода.
 ## Модель процессора
-Интерфейс командной строки: machine.py <instructions_bin_file> <data_bin_file> <input_file>.
-Реализация модели процессора: ...
-###DataPath
-![Data Path Diagram](Data_path_sc.drawio.svg)
-
-Сигналы реализованы
+- Интерфейс командной строки: machine.py <instructions_bin_file> <data_bin_file> <input_file>.
+- Реализация модели процессора: [machine.py](src/machine.py)
+### DataPath
+Реализован в классе `DataPath`
+![Data Path Diagram](diagrams/Data_path_sc.drawio.svg)
+Сигналы:
 Флаги
-###Control Unit
+### Control Unit
+Реализован в классе `ControlUnit`
 ![Control Unit Diagram](diagrams/Control_Unit.drawio.svg)
-
+Сигналы:
 ## Тестирование
+- Тестирование выполняется при помощи golden тестов
+- Модуль для тестирования: [golden_test.py](golden_test.py)
+- Конфигурации:
+  - [cat.yaml](test/golden/cat.yaml) — вывод данных, подаваемых на ввод
+  - [fact.yaml](test/golden/fact.yaml) — вычисление факториала числа
+  - [hello.yaml](test/golden/hello.yaml) — вывести Hello, World!
+  - [hello_user.yaml](test/golden/hello_user.yaml) — вывод `What is your name?`, ожидание пользовательского ввода, затем вывод `Hello, <введённое имя>!`
+  - [mul_extend.yaml](test/golden/mul_extend.yaml) — умножение с двойной точностью
+  - [prob2.yaml](test/golden/prob2.yaml) — задача 6 проекта Эйлера - найти разницу между суммой квадратов первых ста натуральных чисел и квадратом их суммы
+  - [sort.yaml](test/golden/sort.yaml) — сортировка чисел, объявленных в секции данных
