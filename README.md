@@ -254,7 +254,7 @@ var res 0
 - Реализация модели процессора: [machine.py](src/machine.py)
 ### DataPath
 Реализован в классе `DataPath`
-![Data Path Diagram](diagrams/Data_path_sc.drawio.svg)
+![Data Path Diagram](diagrams/Data_path_scheme.drawio.svg)
 ### Сигналы:
 ### Флаги:
 ### Control Unit
