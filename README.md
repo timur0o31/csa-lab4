@@ -273,14 +273,12 @@ var res 0
 ## Модель процессора
 Интерфейс командной строки: machine.py <instructions_bin_file> <data_bin_file> <input_file>.
 Реализация модели процессора: ...
-Сигналы реализованы в виде м
+###DataPath
+![Data Path Diagram](Data_path_sc.drawio.svg)
+
+Сигналы реализованы
 Флаги
-Control Unit
-Прерывания
-### Ввод - вывод
-
-### DataPath
-
-### Control-Unit
+###Control Unit
+![Control Unit Diagram](diagrams/Control_Unit.drawio.svg)
 
 ## Тестирование
